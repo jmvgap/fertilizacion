@@ -67,7 +67,11 @@ const Graficos = (() => {
   }
 
   // ---------- Pasadas superpuestas ----------
-  // datos: resultado de Motor.graficoPasadas + { d, w, ciclo: [x0, x1], media, etqY }
+  // Capas, de atrás hacia adelante: suma total (amarillo), pasadas vecinas
+  // completas (rojo y azul) y pasada central (verde). Así se ve el perfil
+  // entero de cada pasada y el amarillo es lo que la suma agrega por encima.
+  // datos: resultado de Motor.graficoPasadas + { d, w, ciclo: [x0, x1], media,
+  //        etqY, alto, marcada (índice de barra), onClick(índice) }
   function pasadas(svg, datos) {
     const { barras, d } = datos;
     const xmin = barras[0].x - d / 2, xmax = barras[barras.length - 1].x + d / 2;
@@ -83,12 +87,20 @@ const Graficos = (() => {
     const colores = { izquierda: color("--p-izq"), centro: color("--p-cen"), derecha: color("--p-der") };
     const amarillo = color("--p-suma");
     const g = el("g", {}, svg);
+    const barra = (x, v, fill) => {
+      if (v > 1e-9) el("rect", { x, y: c.sy(v), width: anchoBarra, height: c.sy(0) - c.sy(v), fill }, g);
+    };
     for (const b of barras) {
       const x = c.sx(b.x) - anchoBarra / 2;
-      el("rect", { x, y: c.sy(b.base), width: anchoBarra, height: c.sy(0) - c.sy(b.base), fill: colores[b.frente] }, g);
-      if (b.extra > 1e-9) {
-        el("rect", { x, y: c.sy(b.total), width: anchoBarra, height: c.sy(b.base) - c.sy(b.total), fill: amarillo }, g);
-      }
+      barra(x, b.total, amarillo);
+      barra(x, b.izq, colores.izquierda);
+      barra(x, b.der, colores.derecha);
+      barra(x, b.cen, colores.centro);
+    }
+    if (datos.marcada != null && barras[datos.marcada]) {
+      const b = barras[datos.marcada], x = c.sx(b.x) - anchoBarra / 2;
+      el("rect", { x: x - 1.5, y: c.sy(b.total) - 1.5, width: anchoBarra + 3, height: c.sy(0) - c.sy(b.total) + 1.5,
+        fill: "none", stroke: "#111", "stroke-width": 2 }, g);
     }
     // Centros de pasada
     for (const [k, col] of [[-1, colores.izquierda], [0, colores.centro], [1, colores.derecha]]) {
@@ -99,20 +111,36 @@ const Graficos = (() => {
       el("line", { x1: c.m.izq, x2: c.ancho - c.m.der, y1: c.sy(datos.media), y2: c.sy(datos.media),
         stroke: "#333", "stroke-dasharray": "6 4" }, g);
     }
+    // Zona de toque: elige la barra más cercana.
+    if (datos.onClick) {
+      const z = el("rect", { x: c.m.izq, y: 0, width: c.ancho - c.m.izq - c.m.der, height: c.alto,
+        fill: "transparent", style: "cursor:pointer" }, svg);
+      z.addEventListener("click", (ev) => {
+        const r = svg.getBoundingClientRect();
+        const px = ((ev.clientX - r.left) / r.width) * c.ancho;
+        let mejor = 0;
+        barras.forEach((b, i) => { if (Math.abs(c.sx(b.x) - px) < Math.abs(c.sx(barras[mejor].x) - px)) mejor = i; });
+        datos.onClick(mejor);
+      });
+    }
   }
 
   // ---------- Curva de CV en función del ancho ----------
-  // datos: { series: [{ nombre, color, puntos: [{w, cv}], trazo }], umbral, wActual, onClick(w) }
+  // datos: { series: [{ nombre, color, puntos: [{w, cv}], trazo }], limites: [bueno, aceptable],
+  //          wActual, onClick(w) }
+  // Fondo en tres franjas: verde (bueno), amarillo (aceptable) y rojo (malo).
   function curvaCV(svg, datos) {
+    const [bueno, aceptable] = datos.limites;
     const todos = datos.series.flatMap((s) => s.puntos);
     const xmin = Math.min(...todos.map((p) => p.w)), xmax = Math.max(...todos.map((p) => p.w));
-    const ymax = Math.min(Math.max(...todos.map((p) => p.cv).filter(isFinite), datos.umbral * 1.5), 100);
+    const ymax = Math.min(Math.max(...todos.map((p) => p.cv).filter(isFinite), aceptable * 1.4), 100);
     const c = lienzo(svg, 260, xmin, xmax, ymax, { etqY: "CV %" });
     ejeX(c, xmin, xmax);
-    el("rect", { x: c.m.izq, y: c.sy(datos.umbral), width: c.ancho - c.m.izq - c.m.der,
-      height: c.sy(0) - c.sy(datos.umbral), fill: color("--ok"), "fill-opacity": 0.07 }, c.ejes);
-    el("line", { x1: c.m.izq, x2: c.ancho - c.m.der, y1: c.sy(datos.umbral), y2: c.sy(datos.umbral),
-      stroke: color("--ok"), "stroke-dasharray": "6 4", "stroke-width": 1.5 }, c.ejes);
+    const franja = (y0, y1, fill) => el("rect", { x: c.m.izq, y: c.sy(Math.min(y1, c.ytop)), width: c.ancho - c.m.izq - c.m.der,
+      height: Math.max(c.sy(y0) - c.sy(Math.min(y1, c.ytop)), 0), fill, "fill-opacity": 0.13 }, c.ejes);
+    franja(0, bueno, color("--cv-bueno"));
+    franja(bueno, aceptable, color("--cv-medio"));
+    franja(aceptable, c.ytop, color("--cv-malo"));
     const g = el("g", {}, svg);
     for (const s of datos.series) {
       const pts = s.puntos.filter((p) => isFinite(p.cv))

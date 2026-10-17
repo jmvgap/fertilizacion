@@ -5,10 +5,10 @@ Web app instalable en el celular que funciona sin conexión. Este primer módulo
 **Usarla:** https://jmvgap.github.io/fertilizacion/. Desde Chrome en Android: menú ⋮ → *Agregar a la pantalla principal*.
 
 ## Pantallas
-- **Ensayo:** datos, cantidad y distancia entre cajas (de centro a centro), boca de caja y CV aceptable. Permite guardar y abrir ensayos y exportarlos o importarlos en CSV.
-- **Cajas:** carga de pesos, con el perfil de la pasada dibujándose al mismo tiempo. Una caja vacía se interpola; un 0 es un dato.
-- **Pasadas:** deslizador de ancho de trabajo y tres pasadas (roja, verde y azul). La central tapa a las otras y el aporte de las demás sube en amarillo. Muestra el CV y la dosis media.
-- **Curva CV:** CV según el ancho, en modo continuo y alternado, con los rangos de ancho aceptables. Las mitades del alternado son opcionales.
+- **Ensayo:** datos, cantidad y distancia entre cajas (de centro a centro), boca de caja y escala de colores del CV (verde hasta 15 %, amarillo hasta 25 %, rojo arriba; editable). Permite guardar y abrir ensayos y exportarlos o importarlos en CSV.
+- **Cajas:** carga de pesos en una fila horizontal que se desliza de costado, como las cajas en el campo, con la barra de cada caja sobre su casilla. Una caja vacía se interpola; un 0 es un dato.
+- **Pasadas:** deslizador de ancho de trabajo y tres pasadas (roja, verde y azul). Capas: en amarillo la suma de todas las pasadas, delante las vecinas completas y adelante de todo la central. Tocando una barra se ve el aporte de cada pasada. Muestra el CV y la dosis media.
+- **Curva CV:** CV según el ancho, en modo continuo y alternado, con los rangos de ancho en verde y en amarillo. Las mitades del alternado son opcionales.
 - **Dosis:** dosis del ensayo en kg/ha, calibración por caudal (kg/ha = kg/min × 600 ÷ (km/h × m)) y caudal necesario para una dosis.
 
 ## Cómo calcula
@@ -24,7 +24,7 @@ Departamento de Tecnología, Universidad Nacional de Luján · Facultad de Cienc
 Desarrollo personal con fines académicos y de extensión. No es una publicación oficial de dichas instituciones.
 
 ### Antecedente
-Basada en la aplicación FERTICALC (2016), diseñada por Ing. Agr. Roberto Balbuena e Ing. Agr. Juan Manuel Vázquez (Mecanización Agraria, FCAyF–UNLP) y desarrollada por Lic. Nicolás Carlini e Ing. Marcelo Taffarel. Esta versión fue reescrita por completo, con un nuevo método de cálculo de superposición y CV de ciclo completo.
+Basada en la aplicación FERTICALC (2016). Idea y prototipo original (App Inventor): Ing. Agr. Juan Manuel Vázquez, en colaboración con el Ing. Agr. Roberto Balbuena (Mecanización Agraria, FCAyF–UNLP). Versión Android desarrollada por Lic. Nicolás Carlini e Ing. Marcelo Taffarel. Esta versión fue reescrita por completo, con un nuevo método de cálculo de superposición y CV de ciclo completo.
 
 ## Licencia
 Software libre bajo la [GNU GPL versión 3 o posterior](LICENSE). Podés usarlo, copiarlo y modificarlo. Si distribuís una versión modificada, tiene que mantenerse libre bajo la misma licencia. Se ofrece sin garantía.

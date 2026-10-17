@@ -16,6 +16,10 @@
   --p-der: #1e5bd6;
   --p-suma: #f2c200;
   --interp: #9e9e9e;
+  /* Escala de CV */
+  --cv-bueno: #2e9e3e;
+  --cv-medio: #e0a800;
+  --cv-malo: #d32f2f;
   --radio: 10px;
 }
 
@@ -141,6 +145,12 @@ button.btn.chico { padding: 5px 10px; font-size: 14px; }
 .resultados .dato.mal { background: #fdecea; }
 .resultados .dato.mal .val { color: var(--error); }
 .resultados .dato.bien .val { color: var(--ok); }
+.resultados .dato.medio { background: #fff4cc; }
+.resultados .dato.medio .val { color: #8a6400; }
+.cv-bueno { color: var(--ok); font-weight: 600; }
+.cv-medio { color: #8a6400; font-weight: 600; }
+.cv-malo { color: var(--error); font-weight: 600; }
+#res-detalle { margin: 0; font-size: 12px; min-height: 1.4em; }
 
 .control-ancho { display: flex; align-items: center; gap: 8px; }
 .ancho-bloque { flex: 1; min-width: 0; display: flex; flex-direction: column; }

@@ -139,6 +139,25 @@ prueba("rangos aceptables: detecta dos tramos separados", () => {
   return JSON.stringify(r) === '[{"desde":1,"hasta":2},{"desde":5,"hasta":6}]' || JSON.stringify(r);
 });
 
+prueba("gráfico de pasadas: cuenta a mano en −8 m con ancho 15,5 m (ejemplo)", () => {
+  // Central: caja en −8 m = 5,4. Izquierda (centro −15,5): queda a +7,5 m de
+  // su centro, entre sus cajas de +7 (5,3) y +8 m (4,7) → 5,0. Derecha no llega.
+  const g = Motor.graficoPasadas(vals, d, 15.5, false);
+  const b = g.barras.find((x) => Math.abs(x.x + 8) < 1e-9);
+  return (cerca(b.cen, 5.4) && cerca(b.izq, 5.0) && b.der === 0 && cerca(b.total, 10.4)) || JSON.stringify(b);
+});
+
+prueba("gráfico de pasadas: cada barra suma todas las pasadas y nunca menos que las tres visibles", () => {
+  for (const w of [5, 9.5, 15.5, 22]) for (const alt of [false, true]) {
+    const p = Motor.crearPerfil(vals, d);
+    for (const b of Motor.graficoPasadas(vals, d, w, alt).barras) {
+      if (!cerca(b.total, Motor.sumaEn(p, b.x, w, alt))) return `w=${w} x=${b.x}`;
+      if (b.total < b.izq + b.cen + b.der - 1e-9) return `w=${w} x=${b.x} total menor`;
+    }
+  }
+  return true;
+});
+
 // --- Dosis
 prueba("kg/ha por caudal: 120 kg/min, 10 km/h, 20 m = 360", () =>
   cerca(Motor.kgHaDesdeCaudal(120, 10, 20), 360) || "falla");

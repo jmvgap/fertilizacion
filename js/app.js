@@ -28,9 +28,9 @@
     const e = {
       id: null, nombre: "", fecha: new Date().toISOString().slice(0, 10),
       maquina: "", fertilizante: "",
-      nCajas: 31, dCentros: 1, bocaAncho: null, bocaLargo: null,
-      umbral: 15, wPaso: 1, modo: "continuo",
-      valores: new Array(31).fill(null),
+      nCajas: 15, dCentros: 2, bocaAncho: null, bocaLargo: null,
+      cvBueno: 15, cvAceptable: 25, wPaso: 1, modo: "continuo",
+      valores: new Array(15).fill(null),
     };
     e.ancho = anchoInicial(e);
     return e;
@@ -39,6 +39,7 @@
   let pantalla = "ensayo";
   let seleccion = 0;
   let verMitades = false;
+  let barraMarcada = null;
   const cal = Object.assign({ kgRecogidos: null, segundos: null, kgMin: null, vel: null, ancho: null, objetivo: null },
     leer(CLAVE_CAL, {}));
 
@@ -73,6 +74,28 @@
   function anchoMax() { return +(ensayo.nCajas * ensayo.dCentros).toFixed(2); }
   function acotarAncho(w) { return Math.min(Math.max(Math.round(w * 10) / 10, anchoMin()), anchoMax()); }
 
+  // Escala de CV: verde hasta "bueno", amarillo hasta "aceptable", rojo arriba.
+  function limitesCV() {
+    const a = ensayo.cvBueno > 0 ? ensayo.cvBueno : 15, b = ensayo.cvAceptable > 0 ? ensayo.cvAceptable : 25;
+    return [Math.min(a, b), Math.max(a, b)];
+  }
+  function claseCV(cv) {
+    const [bueno, aceptable] = limitesCV();
+    return cv <= bueno ? "bien" : cv <= aceptable ? "medio" : "mal";
+  }
+
+  // Si una caja del extremo todavía recoge bastante, la fila de cajas no llegó
+  // hasta donde la máquina deja de tirar: falta parte de las colas del perfil.
+  function avisoPerfilCortado(r) {
+    if (!r.ok) return "";
+    const v = r.valores, max = Math.max(...v);
+    const partes = [];
+    if (v[0] / max > 0.1) partes.push(`la caja 1 (extremo izquierdo) recoge el ${fmt(v[0] / max * 100, 0)} %`);
+    if (v[v.length - 1] / max > 0.1) partes.push(`la caja ${v.length} (extremo derecho) recoge el ${fmt(v[v.length - 1] / max * 100, 0)} %`);
+    if (!partes.length) return "";
+    return `Perfil posiblemente cortado: ${partes.join(" y ")} de la caja más cargada. Conviene agregar cajas en ese extremo; si no, el CV de los anchos grandes puede salir mejor de lo real.`;
+  }
+
   function aviso(contenedor, mensaje, tipo = "") {
     $(contenedor).innerHTML = mensaje ? `<div class="aviso ${tipo}">${mensaje}</div>` : "";
   }
@@ -83,7 +106,7 @@
   }
 
   // ---------- Navegación ----------
-  const VERSION = "2.2.0";
+  const VERSION = "2.3.0";
   let pantallaAnterior = "ensayo";
   $("#version-app").textContent = VERSION;
   $("#btn-acerca").onclick = () => { if (pantalla !== "acerca") pantallaAnterior = pantalla; irA("acerca"); };
@@ -200,7 +223,7 @@
   };
 
   // ---------- CSV (separador ; y coma decimal, para Excel en castellano) ----------
-  const CAMPOS_CSV = ["nombre", "fecha", "maquina", "fertilizante", "dCentros", "bocaAncho", "bocaLargo", "umbral"];
+  const CAMPOS_CSV = ["nombre", "fecha", "maquina", "fertilizante", "dCentros", "bocaAncho", "bocaLargo", "cvBueno", "cvAceptable"];
   const num = (v) => (v === null || v === undefined ? "" : String(+v.toFixed(6)).replace(".", ","));
 
   $("#btn-exportar").onclick = () => {
@@ -238,7 +261,7 @@
         const [clave, ...resto] = linea.slice(1).split(";");
         const c = clave.trim(), v = resto.join(";").trim();
         if (CAMPOS_CSV.includes(c)) {
-          if (["dCentros", "bocaAncho", "bocaLargo", "umbral"].includes(c)) { const r = Motor.leerNumero(v); if (r.ok) e[c] = r.valor; }
+          if (["dCentros", "bocaAncho", "bocaLargo", "cvBueno", "cvAceptable"].includes(c)) { const r = Motor.leerNumero(v); if (r.ok) e[c] = r.valor; }
           else e[c] = v;
         }
         continue;
@@ -321,7 +344,8 @@
     const errores = Object.entries(erroresCajas).map(([i, e]) => `Caja ${+i + 1}: ${e}`);
     const vacio = !Motor.hayDatos(ensayo.valores);
     if (errores.length) aviso("#aviso-cajas", errores.join("<br>"), "error");
-    else aviso("#aviso-cajas", vacio ? "" : (r.ok ? "" : r.mensaje), "error");
+    else if (!vacio && !r.ok) aviso("#aviso-cajas", r.mensaje, "error");
+    else aviso("#aviso-cajas", avisoPerfilCortado(r));
   }
 
 
@@ -333,11 +357,11 @@
 
   // ============ PASADAS ============
   const rango = $("#ancho-rango");
-  rango.addEventListener("input", () => { ensayo.ancho = acotarAncho(+rango.value); guardarActual(); dibujarPasadas(); });
-  $("#ancho-menos").onclick = () => { ensayo.ancho = acotarAncho(ensayo.ancho - 0.1); guardarActual(); dibujarPasadas(); };
-  $("#ancho-mas").onclick = () => { ensayo.ancho = acotarAncho(ensayo.ancho + 0.1); guardarActual(); dibujarPasadas(); };
+  rango.addEventListener("input", () => { barraMarcada = null; ensayo.ancho = acotarAncho(+rango.value); guardarActual(); dibujarPasadas(); });
+  $("#ancho-menos").onclick = () => { barraMarcada = null; ensayo.ancho = acotarAncho(ensayo.ancho - 0.1); guardarActual(); dibujarPasadas(); };
+  $("#ancho-mas").onclick = () => { barraMarcada = null; ensayo.ancho = acotarAncho(ensayo.ancho + 0.1); guardarActual(); dibujarPasadas(); };
   $$("#modo-pasadas button").forEach((b) => b.addEventListener("click", () => {
-    ensayo.modo = b.dataset.modo; guardarActual(); dibujarPasadas();
+    ensayo.modo = b.dataset.modo; barraMarcada = null; guardarActual(); dibujarPasadas();
   }));
 
   function dibujarPasadas() {
@@ -349,27 +373,43 @@
     const svg = $("#g-pasadas");
     if (!r.ok) {
       aviso("#aviso-pasadas", r.mensaje, "error"); svg.innerHTML = "";
-      $("#res-cv .val").textContent = "—"; $("#res-dosis .val").textContent = "—"; $("#res-mitades").textContent = "";
+      $("#res-cv .val").textContent = "—"; $("#res-dosis .val").textContent = "—";
+      $("#res-mitades").textContent = ""; $("#res-detalle").textContent = "";
       return;
     }
-    aviso("#aviso-pasadas", "");
+    aviso("#aviso-pasadas", avisoPerfilCortado(r));
     const alt = ensayo.modo === "alternado";
     const s = Motor.superponer(r.valores, ensayo.dCentros, ensayo.ancho, alt);
     const g = Motor.graficoPasadas(r.valores, ensayo.dCentros, ensayo.ancho, alt);
     const paso = s.xs.length > 1 ? s.xs[1] - s.xs[0] : ensayo.ancho;
     Graficos.pasadas(svg, { ...g, d: ensayo.dCentros, w: ensayo.ancho, media: s.media, etqY: "g/caja",
       alto: Math.max($("#cont-pasadas").clientHeight, 120),
-      ciclo: [s.xs[0] - paso / 2, s.xs[s.xs.length - 1] + paso / 2] });
+      ciclo: [s.xs[0] - paso / 2, s.xs[s.xs.length - 1] + paso / 2],
+      marcada: barraMarcada, onClick: (i) => { barraMarcada = i; dibujarPasadas(); } });
+    $("#res-detalle").innerHTML = barraMarcada != null && g.barras[barraMarcada]
+      ? detalleBarra(g.barras[barraMarcada])
+      : "Tocá una barra del gráfico para ver de dónde sale su valor.";
 
     const cajaCV = $("#res-cv");
     cajaCV.querySelector(".val").innerHTML = `${fmt(s.cv, 1)} <small>%</small>`;
-    cajaCV.classList.toggle("mal", s.cv > ensayo.umbral);
-    cajaCV.classList.toggle("bien", s.cv <= ensayo.umbral);
+    cajaCV.classList.remove("bien", "medio", "mal");
+    cajaCV.classList.add(claseCV(s.cv));
     const kh = kgHa(s.media);
     $("#res-dosis .val").innerHTML = kh !== null ? `${fmt(kh, 0)} <small>kg/ha</small>` : `${fmt(s.media, 2)} <small>g/caja</small>`;
     $("#res-mitades").innerHTML = alt
       ? `Mitades del ciclo (criterio por mitades): izquierda CV ${fmt(s.mitades[0].cv, 1)} %, derecha CV ${fmt(s.mitades[1].cv, 1)} %. El valor principal es el del ciclo completo.`
       : (kh === null ? "Para ver la dosis en kg/ha cargá la medida de la boca de caja en Ensayo." : "");
+  }
+
+  // Desglose de una barra: aporte de cada pasada al total.
+  function detalleBarra(b) {
+    const partes = [];
+    if (b.cen > 1e-9) partes.push(`<span style="color:var(--p-cen)">■</span> central ${fmt(b.cen, 2)}`);
+    if (b.izq > 1e-9) partes.push(`<span style="color:var(--p-izq)">■</span> izquierda ${fmt(b.izq, 2)}`);
+    if (b.der > 1e-9) partes.push(`<span style="color:var(--p-der)">■</span> derecha ${fmt(b.der, 2)}`);
+    const otras = b.total - b.cen - b.izq - b.der;
+    if (otras > 1e-9) partes.push(`<span style="color:var(--p-suma)">■</span> pasadas más lejanas ${fmt(otras, 2)}`);
+    return `En ${fmt(b.x, 2)} m: ${partes.join(" + ") || "0"} = <b>${fmt(b.total, 2)} g</b>`;
   }
 
   // ============ CURVA DE CV ============
@@ -380,7 +420,8 @@
     $("#ver-mitades").checked = verMitades;
     const r = datosParaCalculo();
     if (!r.ok) { aviso("#aviso-cv", r.mensaje, "error"); $("#g-cv").innerHTML = ""; $("#resumen-cv").innerHTML = ""; $("#tabla-cv").innerHTML = ""; return; }
-    aviso("#aviso-cv", "");
+    aviso("#aviso-cv", avisoPerfilCortado(r));
+    const [bueno, aceptable] = limitesCV();
     const paso = ensayo.wPaso > 0 ? ensayo.wPaso : 1;
     const desde = anchoMin(), hasta = anchoMax();
     const cont = Motor.curvaCV(r.valores, ensayo.dCentros, desde, hasta, paso, false);
@@ -394,15 +435,17 @@
       series.push({ nombre: "Alt. mitad der.", color: "#bf360c", trazo: 1.2, guiones: "1 3", puntos: alt.map((p) => ({ w: p.w, cv: p.cvDer })) });
     }
     Graficos.curvaCV($("#g-cv"), {
-      series, umbral: ensayo.umbral, wActual: ensayo.ancho,
+      series, limites: [bueno, aceptable], wActual: ensayo.ancho,
       onClick: (w) => { ensayo.ancho = acotarAncho(w); guardarActual(); dibujarCV(); },
     });
     $("#leyenda-cv").innerHTML = series.map((s) =>
       `<span><i style="background:${s.color};height:${s.trazo ? 2 : 4}px"></i>${s.nombre}</span>`).join("")
-      + `<span><i style="background:var(--ok);height:2px"></i>CV aceptable (${fmt(ensayo.umbral, 1)} %)</span>`;
+      + `<span><i style="background:var(--cv-bueno);opacity:.35"></i>hasta ${fmt(bueno, 0)} %</span>`
+      + `<span><i style="background:var(--cv-medio);opacity:.35"></i>${fmt(bueno, 0)}–${fmt(aceptable, 0)} %</span>`
+      + `<span><i style="background:var(--cv-malo);opacity:.35"></i>más de ${fmt(aceptable, 0)} %</span>`;
 
-    const rangos = (curva) => {
-      const rs = Motor.rangosAceptables(curva, ensayo.umbral);
+    const rangos = (curva, limite) => {
+      const rs = Motor.rangosAceptables(curva, limite);
       if (!rs.length) return "ninguno";
       return rs.map((x) => (x.desde === curva[0].w ? `hasta ${fmt(x.hasta, 1)} m` : `${fmt(x.desde, 1)} a ${fmt(x.hasta, 1)} m`)).join("<br>");
     };
@@ -411,13 +454,15 @@
     $("#resumen-cv").innerHTML = `
       <table class="tabla">
         <tr><th></th><th>Continuo</th><th>Alternado</th></tr>
-        <tr><td>Anchos con CV ≤ ${fmt(ensayo.umbral, 1)} %</td><td>${rangos(cont)}</td><td>${rangos(alt)}</td></tr>
-        <tr><td>CV con ${fmt(ensayo.ancho, 1)} m</td><td>${fmt(sc.cv, 1)} %</td><td>${fmt(sa.cv, 1)} %</td></tr>
+        <tr><td><span class="cv-bueno">Anchos con CV ≤ ${fmt(bueno, 0)} %</span></td><td>${rangos(cont, bueno)}</td><td>${rangos(alt, bueno)}</td></tr>
+        <tr><td><span class="cv-medio">Anchos con CV ≤ ${fmt(aceptable, 0)} %</span></td><td>${rangos(cont, aceptable)}</td><td>${rangos(alt, aceptable)}</td></tr>
+        <tr><td>CV con ${fmt(ensayo.ancho, 1)} m</td><td class="cv-${{bien: "bueno", medio: "medio", mal: "malo"}[claseCV(sc.cv)]}">${fmt(sc.cv, 1)} %</td>
+          <td class="cv-${{bien: "bueno", medio: "medio", mal: "malo"}[claseCV(sa.cv)]}">${fmt(sa.cv, 1)} %</td></tr>
       </table>`;
     const filas = cont.map((c, i) => {
       const a = alt[i];
-      const cls = c.cv <= ensayo.umbral || a.cv <= ensayo.umbral ? "ok" : "";
-      return `<tr class="${cls}"><td>${fmt(c.w, 2)}</td><td>${fmt(c.cv, 1)}</td><td>${fmt(a.cv, 1)}</td>
+      const k = (cv) => `cv-${{bien: "bueno", medio: "medio", mal: "malo"}[claseCV(cv)]}`;
+      return `<tr><td>${fmt(c.w, 2)}</td><td class="${k(c.cv)}">${fmt(c.cv, 1)}</td><td class="${k(a.cv)}">${fmt(a.cv, 1)}</td>
         <td>${fmt(a.cvIzq, 1)}</td><td>${fmt(a.cvDer, 1)}</td></tr>`;
     }).join("");
     $("#tabla-cv").innerHTML = `<table class="tabla"><tr><th>Ancho (m)</th><th>CV cont.</th><th>CV alt.</th><th>alt. izq.</th><th>alt. der.</th></tr>${filas}</table>`;

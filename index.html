@@ -55,10 +55,12 @@
 
     <div class="tarjeta">
       <h2>Evaluación</h2>
+      <p class="ayuda" style="margin:0 0 8px">Escala de colores del CV: <span class="cv-bueno">verde</span> hasta el primer límite, <span class="cv-medio">amarillo</span> hasta el segundo y <span class="cv-malo">rojo</span> por encima.</p>
       <div class="fila">
-        <label class="campo"><span>CV aceptable (%)</span><input type="text" inputmode="decimal" data-campo="umbral" data-tipo="numero"></label>
-        <label class="campo"><span>Paso de la curva de CV (m)</span><input type="text" inputmode="decimal" data-campo="wPaso" data-tipo="numero"></label>
+        <label class="campo"><span>Verde hasta (% de CV)</span><input type="text" inputmode="decimal" data-campo="cvBueno" data-tipo="numero"></label>
+        <label class="campo"><span>Amarillo hasta (% de CV)</span><input type="text" inputmode="decimal" data-campo="cvAceptable" data-tipo="numero"></label>
       </div>
+      <label class="campo"><span>Paso de la curva de CV (m)</span><input type="text" inputmode="decimal" data-campo="wPaso" data-tipo="numero"></label>
     </div>
 
     <div class="tarjeta">
@@ -88,7 +90,7 @@
         Facultad de Ciencias Agrarias y Forestales, Universidad Nacional de La Plata</p>
       <p class="ayuda">Desarrollo personal con fines académicos y de extensión. No es una publicación oficial de dichas instituciones.</p>
       <h3>Antecedente</h3>
-      <p>Basada en la aplicación FERTICALC (2016), diseñada por Ing. Agr. Roberto Balbuena e Ing. Agr. Juan Manuel Vázquez (Mecanización Agraria, FCAyF–UNLP) y desarrollada por Lic. Nicolás Carlini e Ing. Marcelo Taffarel. Esta versión fue reescrita por completo, con un nuevo método de cálculo de superposición y CV de ciclo completo.</p>
+      <p>Basada en la aplicación FERTICALC (2016). Idea y prototipo original (App Inventor): Ing. Agr. Juan Manuel Vázquez, en colaboración con el Ing. Agr. Roberto Balbuena (Mecanización Agraria, FCAyF–UNLP). Versión Android desarrollada por Lic. Nicolás Carlini e Ing. Marcelo Taffarel. Esta versión fue reescrita por completo, con un nuevo método de cálculo de superposición y CV de ciclo completo.</p>
       <h3>Cómo calcula</h3>
       <p class="ayuda">Suma todas las pasadas que alcanzan cada punto del lote (no solo las vecinas) y calcula el CV sobre un ciclo completo: un ancho de trabajo en modo continuo y dos anchos en alternado. Las mitades del alternado se muestran como dato complementario.</p>
       <h3>Licencia</h3>
@@ -136,9 +138,10 @@
       <span><i style="background:var(--p-izq)"></i>pasada izquierda</span>
       <span><i style="background:var(--p-cen)"></i>central</span>
       <span><i style="background:var(--p-der)"></i>derecha</span>
-      <span><i style="background:var(--p-suma)"></i>aporte de las otras</span>
+      <span><i style="background:var(--p-suma)"></i>suma de todas las pasadas</span>
       <span><i style="background:#ddd"></i>ciclo evaluado</span>
     </div>
+    <p class="ayuda" id="res-detalle"></p>
     <p class="ayuda" id="res-mitades"></p>
   </section>
 
