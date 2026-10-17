@@ -16,6 +16,8 @@
 <ul id="lista"></ul>
 <script src="js/motor.js"></script>
 <script src="js/ejemplos.js"></script>
+<script src="js/catalogo.js"></script>
+<script src="js/recomendacion.js"></script>
 <script>
 const lista = document.getElementById("lista");
 let ok = 0, mal = 0;
@@ -165,6 +167,78 @@ prueba("caudal para dosis (inversa)", () =>
   cerca(Motor.caudalParaDosis(360, 10, 20), 120) || "falla");
 prueba("gramos a kg/ha: 5 g en boca 50×50 cm = 200 kg/ha", () =>
   cerca(Motor.gramosAKgHa(5, 50, 50), 200) || "falla");
+
+// ===== Módulo Recomendación y costos =====
+const R = Recomendacion;
+prueba("N por umbral: 150 − 60 = 90; nunca negativo; soja 0", () =>
+  (R.dosisN(150, 60) === 90 && R.dosisN(150, 200) === 0 && R.dosisN(0, 10) === 0) || "falla");
+
+prueba("Rubio modelo 2: promedio de suelos del norte (arcilla 23, Bray 12) da b ≈ 0,58", () => {
+  // En el trabajo, la media del norte es 0,58.
+  const b = R.coeficienteB(12, 1, 23);
+  return Math.abs(b - 0.58) < 0.01 || b;
+});
+
+prueba("zona: el sur va con 0 (no con 2) y necesita más P por ppm que el norte", () => {
+  const norte = R.dosisP({ bray: 10, critico: 19, arcilla: 25, zona: 1, densidad: 1.25, rendimiento: 0, pGrano: 0 });
+  const sur = R.dosisP({ bray: 10, critico: 19, arcilla: 25, zona: 0, densidad: 1.25, rendimiento: 0, pGrano: 0 });
+  return (sur.porPpm > norte.porPpm && cerca(sur.b, 0.45369 + 0.0356 - 0.086)) || `${norte.porPpm} ${sur.porPpm}`;
+});
+
+prueba("P: cuenta a mano (sur, arcilla 25, Bray 10 → 19, DA 1,25, trigo 4 t)", () => {
+  // b = 0,45369 + 0,0356 − 0,086 = 0,40329; kg/ppm = 2,5 / 0,40329 = 6,199
+  // suficiencia = 9 × 6,199 = 55,79; exportación = 4 × 3,75 = 15; total 70,79
+  const d = R.dosisP({ bray: 10, critico: 19, arcilla: 25, zona: 0, densidad: 1.25, rendimiento: 4, pGrano: 3.75 });
+  return (cerca(d.porPpm, 6.199, 1e-3) && cerca(d.suficiencia, 55.79, 1e-3) && cerca(d.exportacion, 15)
+    && cerca(d.construccion, 70.79, 1e-3)) || JSON.stringify(d);
+});
+
+prueba("P: si el Bray ya supera el crítico, suficiencia 0 y queda solo la reposición", () => {
+  const d = R.dosisP({ bray: 25, critico: 19, arcilla: 20, zona: 1, densidad: 1.25, rendimiento: 10, pGrano: 3 });
+  return (d.suficiencia === 0 && cerca(d.construccion, 30)) || JSON.stringify(d);
+});
+
+const catPrueba = CATALOGO_FERTILIZANTES.map((f) => ({ ...f }));
+prueba("costos: urea 522 U$S/t → 1,135 U$S/kg N; SPT 800 → 4,00 U$S/kg P", () => {
+  const c = R.costosPorNutriente(catPrueba).porFertilizante;
+  return (cerca(c.urea.n, 522 / 460, 1e-9) && cerca(c.spt.p, 4) && cerca(c.spt.p2o5, 4 / R.P_A_P2O5)) || JSON.stringify(c.urea);
+});
+
+prueba("costos: el DAP reparte su precio entre N y P según urea y SPT (sin contar dos veces)", () => {
+  const c = R.costosPorNutriente(catPrueba).porFertilizante.dap;
+  // valor N = 180 × 1,1348 = 204,26; valor P = 200 × 4 = 800 → parte N = 0,20338
+  const parteN = 204.26 / 1004.26;
+  const pagado = c.n * 180 + c.p * 200; // debe sumar exactamente el precio
+  return (cerca(pagado, 880) && cerca(c.n, 880 * parteN / 180, 1e-3)) || JSON.stringify(c);
+});
+
+prueba("combinación: N 100 + P 20 → la más barata es MAP + urea (≈ 179,4 U$S/ha)", () => {
+  const ops = R.combinaciones(catPrueba, 100, 20);
+  const m = ops[0];
+  const ids = m.items.map((it) => it.f.id).sort().join("+");
+  return (ids === "map+urea" && cerca(m.costo, 179.37, 1e-3) && m.aporteN >= 100 - 1e-6 && m.aporteP >= 20 - 1e-6)
+    || `${ids} ${m.costo}`;
+});
+
+prueba("combinación: ninguna mezcla de dos productos (en grilla fina) es más barata que la elegida", () => {
+  const ops = R.combinaciones(catPrueba, 80, 25);
+  const mejor = ops[0].costo;
+  const us = catPrueba.filter((f) => f.precio > 0);
+  for (const a of us) for (const b of us) for (let ka = 0; ka <= 600; ka += 2) {
+    // con ka fijo, la menor cantidad de b que cubre N y P
+    const faltaN = Math.max(80 - ka * a.n / 100, 0), faltaP = Math.max(25 - ka * a.p / 100, 0);
+    const kb = Math.max(faltaN > 0 ? (b.n > 0 ? faltaN / (b.n / 100) : Infinity) : 0, faltaP > 0 ? (b.p > 0 ? faltaP / (b.p / 100) : Infinity) : 0);
+    if (!isFinite(kb)) continue;
+    const costo = ka * a.precio / 1000 + kb * b.precio / 1000;
+    if (costo < mejor - 0.01) return `${a.id} ${ka} + ${b.id} ${kb.toFixed(1)} = ${costo.toFixed(2)} < ${mejor.toFixed(2)}`;
+  }
+  return true;
+});
+
+prueba("combinación: solo P (soja) usa un único producto", () => {
+  const ops = R.combinaciones(catPrueba, 0, 20);
+  return (ops[0].items.length === 1) || JSON.stringify(ops[0].items.map((i) => i.f.id));
+});
 
 document.getElementById("resumen").innerHTML =
   `<p class="${mal ? "mal" : "ok"}">${ok} pruebas bien, ${mal} con error</p>`;

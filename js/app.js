@@ -106,22 +106,37 @@
   }
 
   // ---------- Navegación ----------
-  const VERSION = "2.3.1";
+  const VERSION = "3.0.0";
   let pantallaAnterior = "ensayo";
   $("#version-app").textContent = VERSION;
-  $("#btn-acerca").onclick = () => { if (pantalla !== "acerca") pantallaAnterior = pantalla; irA("acerca"); };
+  $$("[data-acerca]").forEach((b) => { b.onclick = () => { if (pantalla !== "acerca") pantallaAnterior = pantalla; irA("acerca"); }; });
   $("#btn-volver").onclick = () => irA(pantallaAnterior);
 
+  // Cada módulo tiene su barra de pestañas; la pantalla elegida define cuál se ve.
+  // Los otros módulos registran sus pantallas con App.registrar().
+  const otrasPantallas = {};
+  const ultimaDeModulo = { distribucion: "ensayo", recomendacion: "lote" };
+  function moduloDe(p) {
+    const nav = document.querySelector(`nav.pestanas button[data-p="${p}"]`);
+    return nav ? nav.closest("nav").dataset.modulo : null;
+  }
   function irA(p) {
     pantalla = p;
+    const modulo = moduloDe(p);
+    if (modulo) { ultimaDeModulo[modulo] = p; escribir("ferticalc.modulo", modulo); }
     $$("section.pantalla").forEach((s) => s.classList.toggle("activa", s.id === "p-" + p));
-    $$("#pestanas button").forEach((b) => b.classList.toggle("activa", b.dataset.p === p));
+    $$("nav.pestanas").forEach((n) => { if (modulo) n.hidden = n.dataset.modulo !== modulo; });
+    $$("nav.pestanas button").forEach((b) => b.classList.toggle("activa", b.dataset.p === p));
+    $$("[data-ir-modulo]").forEach((b) => b.classList.toggle("activa", b.dataset.irModulo === modulo));
     window.scrollTo(0, 0);
+    medirNav();
     dibujar();
   }
-  $$("#pestanas button").forEach((b) => b.addEventListener("click", () => irA(b.dataset.p)));
+  $$("nav.pestanas button").forEach((b) => b.addEventListener("click", () => irA(b.dataset.p)));
+  $$("[data-ir-modulo]").forEach((b) => b.addEventListener("click", () => irA(ultimaDeModulo[b.dataset.irModulo])));
 
   function dibujar() {
+    if (otrasPantallas[pantalla]) otrasPantallas[pantalla]();
     if (pantalla === "ensayo") dibujarEnsayo();
     if (pantalla === "cajas") dibujarCajas();
     if (pantalla === "pasadas") dibujarPasadas();
@@ -563,7 +578,8 @@
   const pantallasLlenas = ["cajas", "pasadas"];
   function medirNav() {
     const raiz = document.documentElement.style;
-    raiz.setProperty("--alto-nav", $("#pestanas").offsetHeight + "px");
+    const nav = $("nav.pestanas:not([hidden])");
+    if (nav) raiz.setProperty("--alto-nav", nav.offsetHeight + "px");
     const escribiendo = document.activeElement && document.activeElement.tagName === "INPUT";
     if (!escribiendo) raiz.setProperty("--alto-vista", window.innerHeight + "px");
   }
@@ -575,7 +591,25 @@
     if (pantallasLlenas.includes(pantalla)) window.scrollTo(0, 0);
   }, 300));
   window.addEventListener("resize", () => { clearTimeout(dibujar.h); dibujar.h = setTimeout(dibujar, 150); });
-  irA(Motor.hayDatos(ensayo.valores) ? "pasadas" : "ensayo");
+
+  // Funciones compartidas con los otros módulos.
+  window.App = {
+    irA, toast, leer, escribir, mostrarValor, aviso, fmt,
+    registrar(p, fn) { otrasPantallas[p] = fn; },
+    // Lleva una dosis de producto (kg/ha) a la calibración de la fertilizadora.
+    calibrarPara(kgHa) {
+      cal.objetivo = Math.round(kgHa);
+      escribir(CLAVE_CAL, cal);
+      irA("dosis");
+      toast(`Dosis a calibrar: ${fmt(cal.objetivo, 0)} kg/ha`);
+    },
+  };
+
+  // Arranca cuando ya se cargaron todos los módulos.
+  document.addEventListener("DOMContentLoaded", () => {
+    if (leer("ferticalc.modulo", "distribucion") === "recomendacion") irA("lote");
+    else irA(Motor.hayDatos(ensayo.valores) ? "pasadas" : "ensayo");
+  });
 
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("sw.js").catch(() => {});

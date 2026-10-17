@@ -15,8 +15,12 @@
   <!-- ============ ENSAYO ============ -->
   <section class="pantalla" id="p-ensayo">
     <div class="titulo-app">
-      <div><b>Calculadora de Fertilización</b><small>Módulo Distribución</small></div>
-      <button class="btn-info" id="btn-acerca" aria-label="Acerca de">i</button>
+      <div><b>Calculadora de Fertilización</b></div>
+      <button class="btn-info" data-acerca aria-label="Acerca de">i</button>
+    </div>
+    <div class="segmentado selector-modulo">
+      <button data-ir-modulo="distribucion">Distribución</button>
+      <button data-ir-modulo="recomendacion">Recomendación y costos</button>
     </div>
     <div class="tarjeta instalar" id="tarjeta-instalar" hidden>
       <h2>Instalar en el celular</h2>
@@ -78,12 +82,105 @@
     </div>
   </section>
 
+  <!-- ============ RECOMENDACIÓN: LOTE ============ -->
+  <section class="pantalla" id="p-lote">
+    <div class="titulo-app">
+      <div><b>Calculadora de Fertilización</b></div>
+      <button class="btn-info" data-acerca aria-label="Acerca de">i</button>
+    </div>
+    <div class="segmentado selector-modulo">
+      <button data-ir-modulo="distribucion">Distribución</button>
+      <button data-ir-modulo="recomendacion">Recomendación y costos</button>
+    </div>
+    <div class="tarjeta">
+      <h2>Cultivo</h2>
+      <div class="segmentado" id="cultivo-sel">
+        <button data-cultivo="maiz">Maíz</button>
+        <button data-cultivo="soja">Soja</button>
+        <button data-cultivo="trigo">Trigo</button>
+      </div>
+      <label class="campo" style="margin-top:10px"><span>Rendimiento esperado (t/ha)</span><input type="text" inputmode="decimal" data-lote="rendimiento"></label>
+    </div>
+    <div class="tarjeta" id="tarjeta-n">
+      <h2>Nitrógeno</h2>
+      <div class="fila">
+        <label class="campo"><span>N de nitratos 0–60 cm a la siembra (kg N/ha)</span><input type="text" inputmode="decimal" data-lote="nSuelo"></label>
+        <label class="campo"><span>Umbral de N: suelo + fertilizante (kg N/ha)</span><input type="text" inputmode="decimal" data-lote="umbralN"></label>
+      </div>
+    </div>
+    <div class="tarjeta">
+      <h2>Fósforo</h2>
+      <div class="fila">
+        <label class="campo"><span>P Bray 1, 0–20 cm (ppm)</span><input type="text" inputmode="decimal" data-lote="bray"></label>
+        <label class="campo"><span>Nivel crítico (ppm)</span><input type="text" inputmode="decimal" data-lote="criticoP"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="rotacion-trigo"> La rotación incluye trigo: usar 19 ppm para todos los cultivos</label>
+      <div class="fila">
+        <label class="campo"><span>Arcilla, 0–20 cm (%)</span><input type="text" inputmode="decimal" data-lote="arcilla"></label>
+        <label class="campo"><span>Densidad aparente (g/cm³)</span><input type="text" inputmode="decimal" data-lote="densidad"></label>
+      </div>
+      <span class="etq-campo">Ubicación del lote</span>
+      <div class="segmentado" id="zona-sel">
+        <button data-zona="1">Norte</button>
+        <button data-zona="0">Sur</button>
+      </div>
+      <p class="ayuda">La divisoria es la Pampa Deprimida (cuenca del Salado). <b>Norte:</b> Pampa Ondulada y Pampa Llana. <b>Sur:</b> Pampa Austral (sudeste y sudoeste bonaerense).</p>
+      <label class="campo" style="margin-top:8px"><span>P exportado por tonelada de grano (kg P/t)</span><input type="text" inputmode="decimal" data-lote="pGrano"></label>
+      <p class="ayuda">Valores por defecto: niveles críticos de Sucunza et al. (2018) y P en grano de las tablas del IPNI. Todos se pueden cambiar.</p>
+    </div>
+  </section>
+
+  <!-- ============ RECOMENDACIÓN: DOSIS ============ -->
+  <section class="pantalla" id="p-reco">
+    <div id="reco-contenido"></div>
+  </section>
+
+  <!-- ============ RECOMENDACIÓN: FERTILIZANTES ============ -->
+  <section class="pantalla" id="p-fert">
+    <div class="tarjeta">
+      <h2>Fertilizantes y precios</h2>
+      <p class="ayuda">Grado en elemento (N-P-K-S) y, debajo, grado equivalente en óxidos (N-P₂O₅-K₂O-S), como en la bolsa. Precio en U$S por tonelada.</p>
+      <label class="campo" style="max-width:220px"><span>Fecha de los precios</span><input type="date" id="fecha-precios"></label>
+      <div class="tabla-desliza"><table class="tabla tabla-fert" id="tabla-fert"></table></div>
+      <p class="ayuda">Debajo del costo por kg de P figura el costo por kg de P₂O₅, para comparar con las publicaciones que lo expresan así. En los compuestos (DAP, MAP) el precio se reparte entre N y P según lo que costaría cada uno en el fertilizante simple más barato.</p>
+    </div>
+    <details class="tarjeta" id="agregar-fert">
+      <summary>Agregar un fertilizante</summary>
+      <label class="campo"><span>Nombre</span><input type="text" id="nf-nombre"></label>
+      <div class="fila">
+        <label class="campo"><span>N %</span><input type="text" inputmode="decimal" id="nf-n"></label>
+        <label class="campo"><span>P %</span><input type="text" inputmode="decimal" id="nf-p"></label>
+        <label class="campo"><span>K %</span><input type="text" inputmode="decimal" id="nf-k"></label>
+        <label class="campo"><span>S %</span><input type="text" inputmode="decimal" id="nf-s"></label>
+      </div>
+      <p class="ayuda">Porcentajes de elemento (P, no P₂O₅). Si tenés el grado en óxidos: P = P₂O₅ ÷ 2,29 y K = K₂O ÷ 1,2.</p>
+      <label class="campo" style="max-width:220px"><span>Precio (U$S/t)</span><input type="text" inputmode="numeric" id="nf-precio"></label>
+      <div class="botones"><button class="btn" id="nf-agregar">Agregar</button></div>
+    </details>
+    <div class="botones"><button class="btn sec" id="btn-restaurar-fert">Volver a la lista original</button></div>
+  </section>
+
+  <!-- ============ RECOMENDACIÓN: COMBINACIÓN ============ -->
+  <section class="pantalla" id="p-comb">
+    <div class="tarjeta">
+      <h2>Combinación más económica</h2>
+      <span class="etq-campo">Dosis de P a cubrir</span>
+      <div class="segmentado" id="comb-p-sel">
+        <button data-dosisp="suficiencia">Suficiencia</button>
+        <button data-dosisp="construccion">Construcción y mantenimiento</button>
+      </div>
+      <div id="comb-req" style="margin-top:8px"></div>
+    </div>
+    <div id="comb-lista"></div>
+  </section>
+
   <!-- ============ ACERCA DE ============ -->
   <section class="pantalla" id="p-acerca">
     <div class="tarjeta acerca">
       <h2>Calculadora de Fertilización</h2>
-      <p class="ayuda">Módulo Distribución · versión <span id="version-app"></span></p>
-      <p>Ensayo de distribución transversal de fertilizadoras con bandejas: superposición de pasadas, coeficiente de variación según el ancho de trabajo y dosis.</p>
+      <p class="ayuda">Versión <span id="version-app"></span></p>
+      <p><b>Distribución:</b> ensayo de distribución transversal de fertilizadoras con bandejas: superposición de pasadas, coeficiente de variación según el ancho de trabajo y dosis.</p>
+      <p><b>Recomendación y costos:</b> dosis de N y P según análisis de suelo, costo por unidad de nutriente y combinación de fertilizantes más económica. Basado en la app Ferti (2025) del mismo autor.</p>
       <h3>Desarrollo</h3>
       <p><b>Ing. Agr. Juan Manuel Vázquez</b><br>
         Departamento de Tecnología, Universidad Nacional de Luján<br>
@@ -92,7 +189,8 @@
       <h3>Antecedente</h3>
       <p>Basada en la aplicación FERTICALC (2016). Idea y prototipo original (App Inventor): Ing. Agr. Juan Manuel Vázquez, en colaboración con el Ing. Agr. Roberto Balbuena (Mecanización Agraria, FCAyF–UNLP). Versión Android desarrollada por Lic. Nicolás Carlini e Ing. Marcelo Taffarel. Esta versión fue reescrita por completo, con un nuevo método de cálculo de superposición y CV de ciclo completo.</p>
       <h3>Cómo calcula</h3>
-      <p class="ayuda">Suma todas las pasadas que alcanzan cada punto del lote (no solo las vecinas) y calcula el CV sobre un ciclo completo: un ancho de trabajo en modo continuo y dos anchos en alternado. Las mitades del alternado se muestran como dato complementario.</p>
+      <p class="ayuda"><b>Distribución.</b> Suma todas las pasadas que alcanzan cada punto del lote (no solo las vecinas) y calcula el CV sobre un ciclo completo: un ancho de trabajo en modo continuo y dos anchos en alternado. Las mitades del alternado se muestran como dato complementario.</p>
+      <p class="ayuda"><b>Recomendación.</b> N: umbral (N del suelo 0–60 cm + fertilizante) menos los nitratos a la siembra. P: dosis equivalente según Rubio et al. (2008, <i>Soil Sci. Soc. Am. J.</i> 72:1721) con arcilla, P Bray y zona; niveles críticos de Sucunza et al. (2018, <i>Eur. J. Agron.</i> 96:87); P exportado en grano según las tablas del IPNI. Costos: los fertilizantes compuestos reparten su precio entre N y P según el valor de cada nutriente en el fertilizante simple más barato.</p>
       <h3>Licencia</h3>
       <p class="ayuda">Software libre bajo la licencia GNU GPL versión 3. Podés usarlo, copiarlo y modificarlo; si distribuís una versión modificada, tiene que mantenerse libre bajo la misma licencia. Se ofrece sin garantía.<br>
         Código fuente: <a href="https://github.com/jmvgap/fertilizacion" target="_blank" rel="noopener">github.com/jmvgap/fertilizacion</a></p>
@@ -190,12 +288,18 @@
   </section>
 </main>
 
-<nav class="pestanas" id="pestanas">
+<nav class="pestanas" id="pestanas" data-modulo="distribucion">
   <button data-p="ensayo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Ensayo</button>
   <button data-p="cajas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V12M9 20V7M14 20V9M19 20v-6"/></svg>Cajas</button>
   <button data-p="pasadas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 18c3-8 5-8 8 0M8 18c3-8 5-8 8 0M14 18c3-8 5-8 8 0"/></svg>Pasadas</button>
   <button data-p="cv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M6 15c3-6 5-7 7-4s4 2 7-6"/></svg>Curva CV</button>
   <button data-p="dosis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M9 3h6"/></svg>Dosis</button>
+</nav>
+<nav class="pestanas" id="pestanas-reco" data-modulo="recomendacion" hidden>
+  <button data-p="lote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 20V9l7-5 7 5v11"/><path d="M9 20v-6h6v6"/></svg>Lote</button>
+  <button data-p="reco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6l-1 5 4 11a2 2 0 0 1-2 3H8a2 2 0 0 1-2-3l4-11z"/><path d="M8 14h8"/></svg>Dosis N y P</button>
+  <button data-p="fert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l1 5H5z"/><path d="M5 8v12h14V8"/><path d="M12 11v6M9 14h6"/></svg>Fertilizantes</button>
+  <button data-p="comb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H9M12 6v2M12 16v2"/></svg>Más económica</button>
 </nav>
 <div class="toast" id="toast"></div>
 
@@ -203,6 +307,8 @@
 <script src="js/graficos.js"></script>
 <script src="js/catalogo.js"></script>
 <script src="js/ejemplos.js"></script>
+<script src="js/recomendacion.js"></script>
 <script src="js/app.js"></script>
+<script src="js/app-reco.js"></script>
 </body>
 </html>
