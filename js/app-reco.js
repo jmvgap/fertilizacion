@@ -150,14 +150,16 @@
     const filas = catalogo.map((f) => {
       const c = costos[f.id] || {};
       return `<tr data-id="${f.id}">
-        <td>${escapar(f.nombre)} <button class="quitar" title="Quitar" aria-label="Quitar ${escapar(f.nombre)}">×</button></td>
+        <td>${escapar(f.nombre)}${editandoLista ? `<br><button class="btn peligro chico quitar">Quitar</button>` : ""}</td>
         <td class="grado">${grado(f)}</td>
         <td><input type="text" inputmode="numeric" class="precio" value="${f.precio > 0 ? f.precio : ""}" aria-label="Precio de ${escapar(f.nombre)}"></td>
         <td>${usd(c.n)}</td>
         <td>${usd(c.p)}${c.p2o5 !== null && c.p2o5 !== undefined ? `<br><small class="eq">${usd(c.p2o5)}</small>` : ""}</td>
       </tr>`;
     }).join("");
-    $("#tabla-fert").innerHTML = `<tr><th>Fertilizante</th><th>Grado<br><small>equivalente</small></th><th>U$S/t</th><th>U$S/kg N</th><th>U$S/kg P<br><small>/kg P₂O₅</small></th></tr>${filas}`;
+    $("#tabla-fert").innerHTML = `<tr><th>Fertilizante</th><th>Grado<br><small>equivalente</small></th><th>U$S/t</th>
+      <th class="costo">U$S/kg<br>N</th><th class="costo">U$S/kg<br>P <small>(P₂O₅)</small></th></tr>${filas}`;
+    $("#btn-editar-lista").textContent = editandoLista ? "Listo" : "Editar lista";
     $$("#tabla-fert input.precio").forEach((inp) => {
       inp.addEventListener("change", () => {
         const id = inp.closest("tr").dataset.id;
@@ -176,6 +178,9 @@
       guardarCatalogo(); dibujarFert();
     }));
   }
+
+  let editandoLista = false;
+  $("#btn-editar-lista").onclick = () => { editandoLista = !editandoLista; dibujarFert(); };
 
   function escapar(t) {
     return String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));

@@ -2,7 +2,7 @@
 // Calculadora de Fertilización · © 2026 Juan Manuel Vázquez
 // Guarda la app en el teléfono para que funcione sin conexión en el campo.
 // Al publicar cambios hay que subir el número de versión.
-const VERSION = "fertilizacion-v8";
+const VERSION = "fertilizacion-v9";
 const ARCHIVOS = [
   "./", "index.html", "manifest.webmanifest", "css/estilos.css",
   "js/motor.js", "js/graficos.js", "js/catalogo.js", "js/ejemplos.js", "js/recomendacion.js",
@@ -11,7 +11,9 @@ const ARCHIVOS = [
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION)
+    .then((c) => c.addAll(ARCHIVOS.map((u) => new Request(u, { cache: "reload" }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
@@ -21,11 +23,12 @@ self.addEventListener("activate", (e) => {
 });
 
 // Primero intenta la red (para recibir actualizaciones) y si no hay conexión
-// usa la copia guardada.
+// usa la copia guardada. "no-cache" obliga a preguntarle al servidor si hay
+// una versión nueva en lugar de usar la que el navegador tenga guardada.
 self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
+  if (e.request.method !== "GET" || new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request.url, { cache: "no-cache" })
       .then((r) => { const copia = r.clone(); caches.open(VERSION).then((c) => c.put(e.request, copia)); return r; })
       .catch(() => caches.match(e.request, { ignoreSearch: true }))
   );

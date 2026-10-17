@@ -16,6 +16,7 @@
   <section class="pantalla" id="p-ensayo">
     <div class="titulo-app">
       <div><b>Calculadora de Fertilización</b></div>
+      <button class="btn-info" data-ayuda aria-label="Ayuda">?</button>
       <button class="btn-info" data-acerca aria-label="Acerca de">i</button>
     </div>
     <div class="segmentado selector-modulo">
@@ -87,6 +88,7 @@
   <section class="pantalla" id="p-lote">
     <div class="titulo-app">
       <div><b>Calculadora de Fertilización</b></div>
+      <button class="btn-info" data-ayuda aria-label="Ayuda">?</button>
       <button class="btn-info" data-acerca aria-label="Acerca de">i</button>
     </div>
     <div class="segmentado selector-modulo">
@@ -158,7 +160,8 @@
       <label class="campo" style="max-width:220px"><span>Precio (U$S/t)</span><input type="text" inputmode="numeric" id="nf-precio"></label>
       <div class="botones"><button class="btn" id="nf-agregar">Agregar</button></div>
     </details>
-    <div class="botones"><button class="btn sec" id="btn-restaurar-fert">Volver a la lista original</button></div>
+    <div class="botones"><button class="btn sec" id="btn-editar-lista">Editar lista</button>
+      <button class="btn sec" id="btn-restaurar-fert">Volver a la lista original</button></div>
   </section>
 
   <!-- ============ RECOMENDACIÓN: COMBINACIÓN ============ -->
@@ -183,6 +186,57 @@
     </div>
     <p class="ayuda nota-imprimir">Se abre el diálogo de impresión: elegí <b>Guardar como PDF</b> como impresora.</p>
     <div class="informe" id="informe"></div>
+  </section>
+
+  <!-- ============ AYUDA ============ -->
+  <section class="pantalla" id="p-ayuda">
+    <div class="tarjeta ayuda-texto">
+      <h2>Ayuda</h2>
+      <details open>
+        <summary>Cómo usar el módulo Distribución</summary>
+        <ol>
+          <li><b>Ensayo:</b> cargá el nombre, la máquina y el fertilizante; la cantidad de cajas y la distancia entre ellas, medida <b>de centro a centro</b>; y la medida de la boca de la caja si querés la dosis en kg/ha. También podés cambiar los límites de la escala de colores del CV.</li>
+          <li><b>Cajas:</b> cargá el peso de cada caja en orden. La caja 1 es la del extremo izquierdo mirando en el sentido de avance. Si una caja no tiene dato, dejala vacía y se interpola entre sus vecinas; si no recogió nada, poné 0. Es más cómodo con el celular acostado.</li>
+          <li><b>Pasadas:</b> elegí <b>Continuo</b> (todas las pasadas en el mismo sentido, por ejemplo en un recorrido en redondo) o <b>Alternado</b> (ida y vuelta). Mové el ancho de trabajo y mirá cómo cambian el CV y la dosis. Tocá una barra para ver cuánto aporta cada pasada.</li>
+          <li><b>Curva CV:</b> muestra el CV para cada ancho y los rangos de ancho en verde y en amarillo. Tocá la curva para elegir un ancho.</li>
+          <li><b>Dosis:</b> dosis medida en el ensayo y calibración de la máquina con el caudal (kg/min), la velocidad y el ancho.</li>
+          <li><b>Guardar e informe:</b> en Ensayo podés guardar el ensayo en el celular, exportarlo a CSV o generar el <b>Informe PDF</b>.</li>
+        </ol>
+      </details>
+      <details>
+        <summary>Cómo usar el módulo Recomendación y costos</summary>
+        <ol>
+          <li><b>Lote:</b> elegí el cultivo y cargá el rendimiento esperado, los nitratos de 0–60 cm a la siembra, el P Bray, la arcilla, la densidad aparente y la zona (norte o sur de la Pampa Deprimida).</li>
+          <li><b>Dosis N y P:</b> muestra la dosis de N y las dos dosis de P: <b>suficiencia</b> (lleva el P al nivel crítico para esta campaña) y <b>construcción y mantenimiento</b> (además repone lo que se lleva la cosecha).</li>
+          <li><b>Fertilizantes:</b> actualizá los precios en U$S por tonelada. Con "Editar lista" podés quitar productos; también podés agregar otros.</li>
+          <li><b>Más económica:</b> la combinación de fertilizantes más barata que cubre la dosis. "Calibrar" lleva la dosis del producto a la calibración del módulo Distribución.</li>
+        </ol>
+      </details>
+      <details>
+        <summary>Recomendaciones para regular la distribución</summary>
+        <h3>Antes del ensayo</h3>
+        <ul>
+          <li>Máquina limpia, con discos y paletas sin desgaste ni deformaciones, nivelada y a la altura de trabajo que indica el fabricante.</li>
+          <li>Régimen de la toma de fuerza constante y en el valor indicado por el fabricante.</li>
+          <li>Usar el mismo fertilizante que se va a aplicar: granulometría pareja, seco, sin polvo ni terrones.</li>
+          <li>Hacer el ensayo sin viento o con viento muy leve, pasando a la velocidad de trabajo y en forma perpendicular a la fila de cajas.</li>
+          <li>Que las cajas cubran todo el ancho de distribución, incluidas las colas: la app avisa si una caja del extremo todavía recoge bastante.</li>
+        </ul>
+        <h3>Lectura del perfil</h3>
+        <ul>
+          <li><b>Perfil asimétrico</b> (más cargado de un lado): revisar la nivelación, el estado y la posición de las paletas, que los dos discos giren igual y el punto de caída del producto sobre los discos.</li>
+          <li><b>Pozo marcado en el centro</b> o picos a los costados: suele corregirse cambiando el punto de caída del producto sobre el disco o la posición de las paletas, según el manual de la máquina.</li>
+          <li><b>Perfil triangular con colas cortas:</b> el alcance no da para el ancho buscado. Trabajar con menos ancho o revisar el régimen de los discos y las paletas.</li>
+          <li><b>Colas largas y bajas:</b> el ancho de trabajo no es el alcance máximo; es el que surge de la curva de CV.</li>
+        </ul>
+        <h3>Elección del ancho</h3>
+        <ul>
+          <li>Usar el mayor ancho con CV en verde (o, como mucho, en amarillo) para el modo de recorrido que se va a usar en el lote.</li>
+          <li>Repetir el ensayo al cambiar de fertilizante, de regulación o de máquina.</li>
+        </ul>
+      </details>
+      <div class="botones"><button class="btn sec" id="btn-volver-ayuda">Volver</button></div>
+    </div>
   </section>
 
   <!-- ============ ACERCA DE ============ -->

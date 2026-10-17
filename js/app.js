@@ -106,10 +106,12 @@
   }
 
   // ---------- Navegación ----------
-  const VERSION = "3.1.0";
+  const VERSION = "3.2.0";
   let pantallaAnterior = "ensayo";
   $("#version-app").textContent = VERSION;
-  $$("[data-acerca]").forEach((b) => { b.onclick = () => { if (pantalla !== "acerca") pantallaAnterior = pantalla; irA("acerca"); }; });
+  $$("[data-acerca]").forEach((b) => { b.onclick = () => { if (pantalla !== "acerca" && pantalla !== "ayuda") pantallaAnterior = pantalla; irA("acerca"); }; });
+  $$("[data-ayuda]").forEach((b) => { b.onclick = () => { if (pantalla !== "acerca" && pantalla !== "ayuda") pantallaAnterior = pantalla; irA("ayuda"); }; });
+  $("#btn-volver-ayuda").onclick = () => irA(pantallaAnterior);
   $("#btn-volver").onclick = () => irA(pantallaAnterior);
 
   // Cada módulo tiene su barra de pestañas; la pantalla elegida define cuál se ve.

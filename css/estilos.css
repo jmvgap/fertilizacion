@@ -47,6 +47,7 @@ section.pantalla.llena.activa {
 
 .titulo-app { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .titulo-app > div { flex: 1; }
+.titulo-app .btn-info + .btn-info { margin-left: -2px; }
 .titulo-app b { display: block; font-size: 18px; color: var(--verde-osc); }
 .titulo-app small { color: var(--texto-suave); }
 .btn-info { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--verde);
@@ -123,7 +124,7 @@ button.btn.chico { padding: 5px 10px; font-size: 14px; }
   content: ""; position: absolute; left: 15%; right: 15%; bottom: 2px; height: 3px; background: var(--error);
 }
 .col-caja .num { text-align: center; font-weight: 700; font-size: 14px; margin-top: 4px; }
-.col-caja .pos { text-align: center; font-size: 10px; letter-spacing: -.2px; color: var(--texto-suave); margin-bottom: 3px; white-space: nowrap; }
+.col-caja .pos { text-align: center; font-size: 12px; letter-spacing: -.3px; color: var(--texto-suave); margin-bottom: 3px; white-space: nowrap; }
 .col-caja input { text-align: center; padding: 8px 1px; font-size: 15px; border-radius: 6px; }
 .col-caja.interpolada input { border-style: dashed; }
 .col-caja.interpolada input::placeholder { color: var(--interp); }
@@ -226,8 +227,9 @@ small.eq { color: var(--texto-suave); font-size: 12px; }
 .tabla-fert th { font-size: 11px; line-height: 1.2; }
 .tabla-fert td:first-child { line-height: 1.25; }
 .tabla-fert td.grado { text-align: center; white-space: nowrap; font-size: 11px; }
-.tabla-fert input.precio { width: 50px; padding: 4px 3px; text-align: right; font-size: 13px; }
-.tabla-fert button.quitar { border: 0; background: none; color: var(--texto-suave); font-size: 16px; padding: 0 4px; cursor: pointer; }
+.tabla-fert input.precio { width: 44px; padding: 4px 2px; text-align: right; font-size: 13px; }
+.tabla-fert th.costo { white-space: nowrap; }
+.tabla-fert button.quitar { margin-top: 3px; padding: 2px 8px; font-size: 12px; }
 .opcion.mejor { border: 2px solid var(--verde); }
 .opcion-cab { display: flex; justify-content: space-between; align-items: baseline; }
 .opcion-cab .total { font-size: 20px; font-weight: 700; color: var(--verde-osc); }
@@ -272,3 +274,10 @@ small.eq { color: var(--texto-suave); font-size: 12px; }
   .informe { border: 0; padding: 0; border-radius: 0; overflow: visible; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Ayuda */
+.ayuda-texto details { border-top: 1px solid var(--borde); padding: 6px 0; }
+.ayuda-texto summary { font-weight: 600; padding: 4px 0; }
+.ayuda-texto ol, .ayuda-texto ul { padding-left: 20px; margin: 6px 0; }
+.ayuda-texto li { margin-bottom: 6px; font-size: 14px; }
+.ayuda-texto h3 { margin: 10px 0 4px; }

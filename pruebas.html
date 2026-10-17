@@ -80,8 +80,14 @@ prueba("redimensionar conserva el centro", () =>
   JSON.stringify(Motor.redimensionar([1, 2, 3], 5)) === "[null,1,2,3,null]" || "falla");
 
 // --- Superposición contra fuerza bruta, todos los anchos múltiplos de d
-const ej = EJEMPLOS[0];
-const vals = ej.valores, d = ej.dCentros, n = vals.length;
+// Perfil fijo de prueba (inventado): 31 cajas cada 1 m. Es independiente del
+// ejemplo que trae la app, para que las cuentas a mano no cambien.
+const vals = [
+  0.4, 0.9, 1.6, 2.4, 3.3, 4.1, 4.9, 5.4, 5.9, 6.1,
+  6.3, 6.0, 5.6, 5.1, 4.8, 4.6, 4.7, 5.0, 5.4, 5.7,
+  5.9, 5.8, 5.3, 4.7, 4.0, 3.2, 2.4, 1.6, 1.0, 0.5, 0.2,
+];
+const d = 1, n = vals.length;
 for (const alt of [false, true]) {
   prueba(`${alt ? "alternado" : "continuo"}: igual a fuerza bruta en todos los anchos (1 a ${n} cajas)`, () => {
     for (let m = 1; m <= n; m++) {
@@ -141,7 +147,7 @@ prueba("rangos aceptables: detecta dos tramos separados", () => {
   return JSON.stringify(r) === '[{"desde":1,"hasta":2},{"desde":5,"hasta":6}]' || JSON.stringify(r);
 });
 
-prueba("gráfico de pasadas: cuenta a mano en −8 m con ancho 15,5 m (ejemplo)", () => {
+prueba("gráfico de pasadas: cuenta a mano en −8 m con ancho 15,5 m", () => {
   // Central: caja en −8 m = 5,4. Izquierda (centro −15,5): queda a +7,5 m de
   // su centro, entre sus cajas de +7 (5,3) y +8 m (4,7) → 5,0. Derecha no llega.
   const g = Motor.graficoPasadas(vals, d, 15.5, false);
