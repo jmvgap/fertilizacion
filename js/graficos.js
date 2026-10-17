@@ -74,7 +74,14 @@ const Graficos = (() => {
     const pos = Motor.posiciones(n, d);
     const ymax = Math.max(...valores.map((v) => v ?? 0), 0.001);
     const xmin = pos[0] - d / 2, xmax = pos[n - 1] + d / 2;
-    const c = lienzo(svg, 190, xmin, xmax, ymax, { etqY: datos.etqY });
+    const c = lienzo(svg, datos.alto || 190, xmin, xmax, ymax, { etqY: datos.etqY });
+    // Recuadro con las cajas que se ven en la tira de carga.
+    if (datos.ventana) {
+      const [i0, i1] = datos.ventana;
+      el("rect", { x: c.sx(pos[i0] - d / 2), y: c.m.arr - 6, width: c.sx(pos[i1] + d / 2) - c.sx(pos[i0] - d / 2),
+        height: c.sy(0) - c.m.arr + 6, fill: color("--verde-claro"), stroke: color("--verde-osc"),
+        "stroke-width": 1.5, rx: 3 }, c.ejes);
+    }
     ejeX(c, xmin, xmax);
     const anchoBarra = Math.max(c.sx(xmin + d) - c.sx(xmin) - 2, 1);
     const g = el("g", {}, svg);

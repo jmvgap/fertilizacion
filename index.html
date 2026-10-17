@@ -22,6 +22,15 @@
 <main>
   <!-- ============ ENSAYO ============ -->
   <section class="pantalla" id="p-ensayo">
+    <div class="tarjeta instalar" id="tarjeta-instalar" hidden>
+      <h2>Instalar en el celular</h2>
+      <p class="ayuda">Queda con su ícono y funciona sin señal en el campo.</p>
+      <div class="botones">
+        <button class="btn" id="btn-instalar">Instalar</button>
+        <button class="btn sec" id="btn-instalar-no">Ahora no</button>
+      </div>
+      <div id="instalar-ayuda"></div>
+    </div>
     <div class="tarjeta">
       <h2>Datos del ensayo</h2>
       <label class="campo"><span>Nombre</span><input type="text" data-campo="nombre" placeholder="Ej.: Lote 4 – urea"></label>
@@ -94,19 +103,18 @@
 
   <!-- ============ CAJAS (perfil único) ============ -->
   <section class="pantalla" id="p-cajas">
-    <div class="fijo">
-      <svg class="grafico" id="g-perfil"></svg>
-      <div class="leyenda">
-        <span><i style="background:var(--p-cen)"></i>medida</span>
-        <span><i style="background:var(--interp);opacity:.6"></i>interpolada</span>
-        <span><i style="background:var(--error);height:3px"></i>sin dato</span>
-      </div>
-      <div id="aviso-cajas"></div>
+    <svg class="grafico" id="g-perfil"></svg>
+    <div class="leyenda">
+      <span><i style="background:var(--p-cen)"></i>medida</span>
+      <span><i style="background:var(--interp);opacity:.6"></i>interpolada</span>
+      <span><i style="background:var(--error);height:3px"></i>sin dato</span>
+      <span><i style="border:1.5px solid var(--verde-osc);background:none"></i>parte visible abajo</span>
     </div>
-    <div class="tarjeta">
-      <h2>Peso por caja (g)</h2>
-      <p class="ayuda" style="margin-bottom:8px">Caja 1 = extremo izquierdo mirando en el sentido de avance. Dejá vacía una caja sin dato (se interpola); si pesó cero, poné 0.</p>
-      <div class="grilla-cajas" id="grilla-cajas"></div>
+    <div id="aviso-cajas"></div>
+    <div class="tarjeta tarjeta-tira">
+      <h2>Peso por caja (g) <small class="ayuda">← deslizá de costado →</small></h2>
+      <div class="tira-cajas" id="tira-cajas"></div>
+      <p class="ayuda">Caja 1 = extremo izquierdo mirando en el sentido de avance. Dejá vacía una caja sin dato (se interpola); si pesó cero, poné 0.</p>
       <div class="botones"><button class="btn peligro" id="btn-borrar-valores">Borrar todos los pesos</button></div>
     </div>
   </section>

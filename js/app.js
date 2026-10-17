@@ -82,7 +82,7 @@
   }
 
   // ---------- Navegación ----------
-  const VERSION = "2.0.0";
+  const VERSION = "2.1.0";
   let pantallaAnterior = "ensayo";
   $("#version-app").textContent = VERSION;
   $("#btn-acerca").onclick = () => { if (pantalla !== "acerca") pantallaAnterior = pantalla; irA("acerca"); };
@@ -255,65 +255,97 @@
   }
 
   // ============ CAJAS ============
+  // Las cajas se muestran en una tira horizontal, en el mismo orden que en el
+  // campo: cada columna tiene su barra arriba y la casilla de peso abajo.
+  const tira = $("#tira-cajas");
+  const erroresCajas = {};
+
   function dibujarCajas() {
-    const grilla = $("#grilla-cajas");
     const pos = Motor.posiciones(ensayo.nCajas, ensayo.dCentros);
-    if (grilla.children.length !== ensayo.nCajas || grilla.dataset.d !== String(ensayo.dCentros)) {
-      grilla.innerHTML = "";
-      grilla.dataset.d = ensayo.dCentros;
+    if (tira.children.length !== ensayo.nCajas || tira.dataset.d !== String(ensayo.dCentros)) {
+      tira.innerHTML = "";
+      tira.dataset.d = ensayo.dCentros;
       for (let i = 0; i < ensayo.nCajas; i++) {
-        const div = document.createElement("div");
-        div.className = "caja-in";
-        div.innerHTML = `<label>Caja ${i + 1} <small>(${fmt(pos[i], 2)} m)</small></label>
-          <input type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off"><div class="error-txt"></div>`;
-        const inp = div.querySelector("input");
+        const col = document.createElement("div");
+        col.className = "col-caja";
+        col.innerHTML = `<div class="barra-cont"><div class="barra"></div></div>
+          <div class="num">${i + 1}</div><div class="pos">${fmt(pos[i], 2)} m</div>
+          <input type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" aria-label="Peso caja ${i + 1}">`;
+        const inp = col.querySelector("input");
         inp.addEventListener("focus", () => { seleccion = i; inp.select(); actualizarPerfil(); });
         inp.addEventListener("input", () => {
           const r = Motor.leerNumero(inp.value);
           inp.classList.toggle("invalido", !r.ok);
-          div.querySelector(".error-txt").textContent = r.ok ? "" : r.error;
-          if (!r.ok) return;
-          ensayo.valores[i] = r.valor;
-          guardarActual();
+          if (r.ok) delete erroresCajas[i]; else erroresCajas[i] = r.error;
+          if (r.ok) { ensayo.valores[i] = r.valor; guardarActual(); }
           actualizarPerfil();
         });
         inp.addEventListener("keydown", (ev) => {
           if (ev.key === "Enter") {
             ev.preventDefault();
-            const sig = grilla.children[i + 1];
+            const sig = tira.children[i + 1];
             if (sig) sig.querySelector("input").focus(); else inp.blur();
           }
         });
-        grilla.appendChild(div);
+        // Tocar la barra también elige la caja.
+        col.querySelector(".barra-cont").addEventListener("click", () => inp.focus());
+        tira.appendChild(col);
       }
+      // Arranca mostrando el centro de la fila.
+      requestAnimationFrame(() => { tira.scrollLeft = (tira.scrollWidth - tira.clientWidth) / 2; actualizarPerfil(); });
     }
-    Array.from(grilla.children).forEach((div, i) => {
-      const inp = div.querySelector("input");
+    Array.from(tira.children).forEach((col, i) => {
+      const inp = col.querySelector("input");
       if (document.activeElement !== inp) {
         inp.value = mostrarValor(ensayo.valores[i]);
         inp.classList.remove("invalido");
-        div.querySelector(".error-txt").textContent = "";
+        delete erroresCajas[i];
       }
     });
     actualizarPerfil();
   }
 
+  // Cajas que se ven ahora en la tira (para marcarlas en el perfil completo).
+  function cajasVisibles() {
+    const cols = tira.children;
+    if (!cols.length || !tira.clientWidth) return null;
+    const paso = cols.length > 1 ? cols[1].offsetLeft - cols[0].offsetLeft : cols[0].offsetWidth;
+    const i0 = Math.max(0, Math.round((tira.scrollLeft) / paso));
+    const i1 = Math.min(cols.length - 1, Math.round((tira.scrollLeft + tira.clientWidth) / paso) - 1);
+    return [i0, Math.max(i0, i1)];
+  }
+
   function actualizarPerfil() {
     const r = datosParaCalculo();
-    const grilla = $("#grilla-cajas");
-    Array.from(grilla.children).forEach((div, i) => {
-      div.classList.toggle("interpolada", r.interpoladas[i]);
-      div.classList.toggle("seleccionada", i === seleccion);
-      const inp = div.querySelector("input");
-      inp.placeholder = r.interpoladas[i] ? fmt(r.valores[i], 2) : "";
+    const max = Math.max(...r.valores.map((v) => v ?? 0), 0.001);
+    Array.from(tira.children).forEach((col, i) => {
+      const v = r.valores[i];
+      col.classList.toggle("interpolada", r.interpoladas[i]);
+      col.classList.toggle("sin-dato", v === null || v === undefined);
+      col.classList.toggle("seleccionada", i === seleccion);
+      col.querySelector(".barra").style.height = v > 0 ? (v / max) * 100 + "%" : "0";
+      col.querySelector("input").placeholder = r.interpoladas[i] ? fmt(v, 2) : "";
     });
     Graficos.perfil($("#g-perfil"), {
       valores: r.valores, interpoladas: r.interpoladas, d: ensayo.dCentros, seleccion, etqY: "g",
-      onClick: (i) => { const inp = grilla.children[i]?.querySelector("input"); if (inp) { inp.focus(); inp.scrollIntoView({ block: "center", behavior: "smooth" }); } },
+      alto: 120, ventana: cajasVisibles(),
+      onClick: (i) => {
+        const col = tira.children[i];
+        if (col) { tira.scrollTo({ left: col.offsetLeft - (tira.clientWidth - col.offsetWidth) / 2, behavior: "smooth" }); col.querySelector("input").focus({ preventScroll: true }); }
+      },
     });
+    const errores = Object.entries(erroresCajas).map(([i, e]) => `Caja ${+i + 1}: ${e}`);
     const vacio = !Motor.hayDatos(ensayo.valores);
-    aviso("#aviso-cajas", vacio ? "" : (r.ok ? "" : r.mensaje), "error");
+    if (errores.length) aviso("#aviso-cajas", errores.join("<br>"), "error");
+    else aviso("#aviso-cajas", vacio ? "" : (r.ok ? "" : r.mensaje), "error");
   }
+
+  let pendienteScroll = false;
+  tira.addEventListener("scroll", () => {
+    if (pendienteScroll) return;
+    pendienteScroll = true;
+    requestAnimationFrame(() => { pendienteScroll = false; actualizarPerfil(); });
+  }, { passive: true });
 
   $("#btn-borrar-valores").onclick = () => {
     if (!confirm("¿Borrar todos los pesos cargados?")) return;
@@ -459,6 +491,44 @@
            <div class="val">${fmt(kh, 0)} <small>kg/ha</small></div></div></div>
          <p class="ayuda">Promedio de ${fmt(s.media, 2)} g por caja en una boca de ${fmt(ensayo.bocaAncho, 1)} × ${fmt(ensayo.bocaLargo, 1)} cm. Vale para la velocidad y apertura con que se hizo el ensayo.</p>`;
   }
+
+  // ---------- Instalación ----------
+  // Chrome avisa con "beforeinstallprompt" cuando se puede instalar; en ese
+  // caso el botón abre el diálogo del sistema. Si no, se explica cómo hacerlo
+  // según el navegador.
+  let pedidoInstalar = null;
+  const instalada = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  function mostrarTarjetaInstalar() {
+    $("#tarjeta-instalar").hidden = instalada() || leer("ferticalc.instalarNo", false);
+  }
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); pedidoInstalar = e; mostrarTarjetaInstalar(); });
+  window.addEventListener("appinstalled", () => { $("#tarjeta-instalar").hidden = true; toast("App instalada"); });
+  $("#btn-instalar-no").onclick = () => { escribir("ferticalc.instalarNo", true); $("#tarjeta-instalar").hidden = true; };
+  $("#btn-instalar").onclick = async () => {
+    if (pedidoInstalar) {
+      pedidoInstalar.prompt();
+      await pedidoInstalar.userChoice.catch(() => {});
+      pedidoInstalar = null;
+      return;
+    }
+    const ua = navigator.userAgent;
+    let ayuda;
+    if (/iPhone|iPad|iPod/.test(ua)) {
+      ayuda = "En iPhone: abrila en <b>Safari</b>, tocá el botón <b>Compartir</b> (cuadrado con flecha) y elegí <b>Agregar a inicio</b>.";
+    } else if (/; wv\)|FBAN|FBAV|Instagram|Line\//.test(ua)) {
+      ayuda = "Estás viendo la página dentro de otra aplicación, y ahí no se puede instalar. Tocá el menú <b>⋮</b> y elegí <b>Abrir en Chrome</b> (o copiá la dirección y pegala en Chrome).";
+    } else if (/SamsungBrowser/.test(ua)) {
+      ayuda = "En Samsung Internet: tocá el menú <b>≡</b> (abajo), luego <b>Agregar página a</b> → <b>Pantalla de inicio</b>.";
+    } else if (/Firefox/.test(ua)) {
+      ayuda = "En Firefox: tocá el menú <b>⋮</b> y elegí <b>Instalar</b>.";
+    } else if (/Android/.test(ua)) {
+      ayuda = "En Chrome: tocá el menú <b>⋮</b> (arriba a la derecha) y elegí <b>Instalar app</b> o <b>Agregar a la pantalla principal</b>. Si no aparece, recargá la página y esperá unos segundos.";
+    } else {
+      ayuda = "En la computadora: usá el ícono de instalar que aparece a la derecha de la barra de direcciones de Chrome o Edge.";
+    }
+    $("#instalar-ayuda").innerHTML = `<div class="aviso" style="margin-top:10px">${ayuda}</div>`;
+  };
+  mostrarTarjetaInstalar();
 
   // ---------- Inicio ----------
   window.addEventListener("resize", () => { clearTimeout(dibujar.h); dibujar.h = setTimeout(dibujar, 150); });
