@@ -21,14 +21,19 @@
   }
 
   // ---------- Estado ----------
+  // Ancho de trabajo inicial: la mitad del ancho que cubren las cajas.
+  function anchoInicial(e) { return Math.max(Math.round((e.nCajas * e.dCentros) / 2 * 10) / 10, e.dCentros); }
+
   function ensayoNuevo() {
-    return {
+    const e = {
       id: null, nombre: "", fecha: new Date().toISOString().slice(0, 10),
       maquina: "", fertilizante: "",
       nCajas: 31, dCentros: 1, bocaAncho: null, bocaLargo: null,
-      umbral: 15, wPaso: 0.5, modo: "continuo", ancho: 15,
+      umbral: 15, wPaso: 1, modo: "continuo",
       valores: new Array(31).fill(null),
     };
+    e.ancho = anchoInicial(e);
+    return e;
   }
   let ensayo = Object.assign(ensayoNuevo(), leer(CLAVE_ACTUAL, {}));
   let pantalla = "ensayo";
@@ -77,12 +82,8 @@
     return Motor.gramosAKgHa(gramos, ensayo.bocaAncho, ensayo.bocaLargo);
   }
 
-  function mostrarSubtitulo() {
-    $("#sub-ensayo").textContent = ensayo.nombre ? " · " + ensayo.nombre : "";
-  }
-
   // ---------- Navegación ----------
-  const VERSION = "2.1.0";
+  const VERSION = "2.2.0";
   let pantallaAnterior = "ensayo";
   $("#version-app").textContent = VERSION;
   $("#btn-acerca").onclick = () => { if (pantalla !== "acerca") pantallaAnterior = pantalla; irA("acerca"); };
@@ -98,7 +99,6 @@
   $$("#pestanas button").forEach((b) => b.addEventListener("click", () => irA(b.dataset.p)));
 
   function dibujar() {
-    mostrarSubtitulo();
     if (pantalla === "ensayo") dibujarEnsayo();
     if (pantalla === "cajas") dibujarCajas();
     if (pantalla === "pasadas") dibujarPasadas();
@@ -126,7 +126,7 @@
   $$("#p-ensayo [data-campo]").forEach((inp) => {
     inp.addEventListener("input", () => {
       const campo = inp.dataset.campo;
-      if (!inp.dataset.tipo) { ensayo[campo] = inp.value; guardarActual(); mostrarSubtitulo(); return; }
+      if (!inp.dataset.tipo) { ensayo[campo] = inp.value; guardarActual(); return; }
       const r = Motor.leerNumero(inp.value);
       let valido = r.ok && r.valor !== null && r.valor > 0;
       if (valido && inp.dataset.tipo === "entero") valido = Number.isInteger(r.valor) && r.valor >= 3 && r.valor <= 200;
@@ -138,7 +138,8 @@
         seleccion = Math.min(seleccion, r.valor - 1);
       }
       ensayo[campo] = r.valor;
-      ensayo.ancho = acotarAncho(ensayo.ancho);
+      // Si cambia lo que cubren las cajas, el ancho vuelve a la mitad de esa extensión.
+      ensayo.ancho = campo === "nCajas" || campo === "dCentros" ? anchoInicial(ensayo) : acotarAncho(ensayo.ancho);
       guardarActual();
     });
   });
@@ -146,7 +147,7 @@
   function dibujarLista() {
     const lista = leer(CLAVE_ENSAYOS, []);
     const ul = $("#lista-ensayos");
-    if (!lista.length) { ul.innerHTML = `<li><small>No hay ensayos guardados.</small></li>`; return; }
+    if (!lista.length) { ul.innerHTML = `<li><small>Todavía no guardaste ningún ensayo.</small></li>`; return; }
     ul.innerHTML = "";
     lista.slice().sort((a, b) => (b.fecha || "").localeCompare(a.fecha || "")).forEach((e) => {
       const li = document.createElement("li");
@@ -194,6 +195,7 @@
       nombre: e.nombre, maquina: e.maquina, fertilizante: e.fertilizante, dCentros: e.dCentros,
       bocaAncho: e.bocaAncho, bocaLargo: e.bocaLargo, nCajas: e.valores.length, valores: e.valores.slice(),
     });
+    ensayo.ancho = anchoInicial(ensayo);
     guardarActual(); toast("Ejemplo cargado (datos inventados)"); dibujar();
   };
 
@@ -250,7 +252,7 @@
     }
     if (valores.length < 3) throw new Error("hacen falta al menos 3 cajas");
     e.valores = valores; e.nCajas = valores.length;
-    e.ancho = Math.round(valores.length * e.dCentros / 2);
+    e.ancho = anchoInicial(e);
     return e;
   }
 
@@ -292,7 +294,7 @@
         tira.appendChild(col);
       }
       // Arranca mostrando el centro de la fila.
-      requestAnimationFrame(() => { tira.scrollLeft = (tira.scrollWidth - tira.clientWidth) / 2; actualizarPerfil(); });
+      requestAnimationFrame(() => { tira.scrollLeft = (tira.scrollWidth - tira.clientWidth) / 2; });
     }
     Array.from(tira.children).forEach((col, i) => {
       const inp = col.querySelector("input");
@@ -303,16 +305,6 @@
       }
     });
     actualizarPerfil();
-  }
-
-  // Cajas que se ven ahora en la tira (para marcarlas en el perfil completo).
-  function cajasVisibles() {
-    const cols = tira.children;
-    if (!cols.length || !tira.clientWidth) return null;
-    const paso = cols.length > 1 ? cols[1].offsetLeft - cols[0].offsetLeft : cols[0].offsetWidth;
-    const i0 = Math.max(0, Math.round((tira.scrollLeft) / paso));
-    const i1 = Math.min(cols.length - 1, Math.round((tira.scrollLeft + tira.clientWidth) / paso) - 1);
-    return [i0, Math.max(i0, i1)];
   }
 
   function actualizarPerfil() {
@@ -326,26 +318,12 @@
       col.querySelector(".barra").style.height = v > 0 ? (v / max) * 100 + "%" : "0";
       col.querySelector("input").placeholder = r.interpoladas[i] ? fmt(v, 2) : "";
     });
-    Graficos.perfil($("#g-perfil"), {
-      valores: r.valores, interpoladas: r.interpoladas, d: ensayo.dCentros, seleccion, etqY: "g",
-      alto: 120, ventana: cajasVisibles(),
-      onClick: (i) => {
-        const col = tira.children[i];
-        if (col) { tira.scrollTo({ left: col.offsetLeft - (tira.clientWidth - col.offsetWidth) / 2, behavior: "smooth" }); col.querySelector("input").focus({ preventScroll: true }); }
-      },
-    });
     const errores = Object.entries(erroresCajas).map(([i, e]) => `Caja ${+i + 1}: ${e}`);
     const vacio = !Motor.hayDatos(ensayo.valores);
     if (errores.length) aviso("#aviso-cajas", errores.join("<br>"), "error");
     else aviso("#aviso-cajas", vacio ? "" : (r.ok ? "" : r.mensaje), "error");
   }
 
-  let pendienteScroll = false;
-  tira.addEventListener("scroll", () => {
-    if (pendienteScroll) return;
-    pendienteScroll = true;
-    requestAnimationFrame(() => { pendienteScroll = false; actualizarPerfil(); });
-  }, { passive: true });
 
   $("#btn-borrar-valores").onclick = () => {
     if (!confirm("¿Borrar todos los pesos cargados?")) return;
@@ -380,6 +358,7 @@
     const g = Motor.graficoPasadas(r.valores, ensayo.dCentros, ensayo.ancho, alt);
     const paso = s.xs.length > 1 ? s.xs[1] - s.xs[0] : ensayo.ancho;
     Graficos.pasadas(svg, { ...g, d: ensayo.dCentros, w: ensayo.ancho, media: s.media, etqY: "g/caja",
+      alto: Math.max($("#cont-pasadas").clientHeight, 120),
       ciclo: [s.xs[0] - paso / 2, s.xs[s.xs.length - 1] + paso / 2] });
 
     const cajaCV = $("#res-cv");
@@ -402,7 +381,7 @@
     const r = datosParaCalculo();
     if (!r.ok) { aviso("#aviso-cv", r.mensaje, "error"); $("#g-cv").innerHTML = ""; $("#resumen-cv").innerHTML = ""; $("#tabla-cv").innerHTML = ""; return; }
     aviso("#aviso-cv", "");
-    const paso = ensayo.wPaso > 0 ? ensayo.wPaso : 0.5;
+    const paso = ensayo.wPaso > 0 ? ensayo.wPaso : 1;
     const desde = anchoMin(), hasta = anchoMax();
     const cont = Motor.curvaCV(r.valores, ensayo.dCentros, desde, hasta, paso, false);
     const alt = Motor.curvaCV(r.valores, ensayo.dCentros, desde, hasta, paso, true);
@@ -531,6 +510,13 @@
   mostrarTarjetaInstalar();
 
   // ---------- Inicio ----------
+  // El alto de la barra de pestañas define cuánto lugar queda para las
+  // pantallas que ocupan toda la altura (Cajas y Pasadas).
+  function medirNav() {
+    document.documentElement.style.setProperty("--alto-nav", $("#pestanas").offsetHeight + "px");
+  }
+  medirNav();
+  window.addEventListener("resize", medirNav);
   window.addEventListener("resize", () => { clearTimeout(dibujar.h); dibujar.h = setTimeout(dibujar, 150); });
   irA(Motor.hayDatos(ensayo.valores) ? "pasadas" : "ensayo");
 

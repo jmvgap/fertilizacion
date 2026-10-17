@@ -11,17 +11,13 @@
 <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
-<header class="barra">
-  <div class="titulos">
-    <h1>Calculadora de Fertilización</h1>
-    <div class="sub">Distribución<span id="sub-ensayo"></span></div>
-  </div>
-  <button class="btn-info" id="btn-acerca" aria-label="Acerca de">i</button>
-</header>
-
 <main>
   <!-- ============ ENSAYO ============ -->
   <section class="pantalla" id="p-ensayo">
+    <div class="titulo-app">
+      <div><b>Calculadora de Fertilización</b><small>Módulo Distribución</small></div>
+      <button class="btn-info" id="btn-acerca" aria-label="Acerca de">i</button>
+    </div>
     <div class="tarjeta instalar" id="tarjeta-instalar" hidden>
       <h2>Instalar en el celular</h2>
       <p class="ayuda">Queda con su ícono y funciona sin señal en el campo.</p>
@@ -66,7 +62,8 @@
     </div>
 
     <div class="tarjeta">
-      <h2>Ensayos guardados</h2>
+      <h2>Guardar y abrir ensayos</h2>
+      <p class="ayuda">Acá no se carga nada. Con <b>Guardar</b>, el ensayo que estás viendo queda archivado en este celular con su nombre, para volver a abrirlo después. <b>Nuevo</b> empieza uno en blanco. <b>Exportar CSV</b> genera un archivo para abrir en Excel o mandar por correo.</p>
       <div class="botones">
         <button class="btn" id="btn-guardar">Guardar</button>
         <button class="btn sec" id="btn-nuevo">Nuevo</button>
@@ -102,47 +99,45 @@
   </section>
 
   <!-- ============ CAJAS (perfil único) ============ -->
-  <section class="pantalla" id="p-cajas">
-    <svg class="grafico" id="g-perfil"></svg>
-    <div class="leyenda">
-      <span><i style="background:var(--p-cen)"></i>medida</span>
-      <span><i style="background:var(--interp);opacity:.6"></i>interpolada</span>
-      <span><i style="background:var(--error);height:3px"></i>sin dato</span>
-      <span><i style="border:1.5px solid var(--verde-osc);background:none"></i>parte visible abajo</span>
+  <section class="pantalla llena" id="p-cajas">
+    <div class="cabecera-cajas">
+      <b>Peso por caja (g)</b>
+      <span class="ayuda">← deslizá de costado →</span>
+      <button class="btn peligro chico" id="btn-borrar-valores">Borrar todo</button>
     </div>
     <div id="aviso-cajas"></div>
-    <div class="tarjeta tarjeta-tira">
-      <h2>Peso por caja (g) <small class="ayuda">← deslizá de costado →</small></h2>
-      <div class="tira-cajas" id="tira-cajas"></div>
-      <p class="ayuda">Caja 1 = extremo izquierdo mirando en el sentido de avance. Dejá vacía una caja sin dato (se interpola); si pesó cero, poné 0.</p>
-      <div class="botones"><button class="btn peligro" id="btn-borrar-valores">Borrar todos los pesos</button></div>
-    </div>
+    <div class="tira-cajas" id="tira-cajas"></div>
+    <p class="ayuda nota-cajas">Caja 1 = extremo izquierdo mirando en el sentido de avance. Vacía = sin dato (se interpola); si no recogió nada, poné 0. Gris = interpolada.</p>
   </section>
 
   <!-- ============ PASADAS ============ -->
-  <section class="pantalla" id="p-pasadas">
-    <div class="segmentado" id="modo-pasadas">
-      <button data-modo="continuo">Continuo (ida y vuelta igual)</button>
-      <button data-modo="alternado">Alternado</button>
-    </div>
-    <div class="ancho-valor" id="ancho-valor"></div>
-    <div class="control-ancho">
-      <button id="ancho-menos" aria-label="Menos ancho">−</button>
-      <input type="range" id="ancho-rango" aria-label="Ancho de trabajo">
-      <button id="ancho-mas" aria-label="Más ancho">+</button>
+  <section class="pantalla llena" id="p-pasadas">
+    <div class="controles-pasadas">
+      <div class="segmentado" id="modo-pasadas">
+        <button data-modo="continuo">Continuo</button>
+        <button data-modo="alternado">Alternado</button>
+      </div>
+      <div class="control-ancho">
+        <button id="ancho-menos" aria-label="Menos ancho">−</button>
+        <div class="ancho-bloque">
+          <div class="ancho-valor" id="ancho-valor"></div>
+          <input type="range" id="ancho-rango" aria-label="Ancho de trabajo">
+        </div>
+        <button id="ancho-mas" aria-label="Más ancho">+</button>
+      </div>
+      <div class="resultados">
+        <div class="dato" id="res-cv"><div class="etq">CV</div><div class="val"></div></div>
+        <div class="dato" id="res-dosis"><div class="etq">Dosis media</div><div class="val"></div></div>
+      </div>
     </div>
     <div id="aviso-pasadas"></div>
-    <svg class="grafico" id="g-pasadas"></svg>
+    <div class="contenedor-grafico" id="cont-pasadas"><svg class="grafico" id="g-pasadas"></svg></div>
     <div class="leyenda">
       <span><i style="background:var(--p-izq)"></i>pasada izquierda</span>
-      <span><i style="background:var(--p-cen)"></i>pasada central</span>
-      <span><i style="background:var(--p-der)"></i>pasada derecha</span>
-      <span><i style="background:var(--p-suma)"></i>aporte de las otras pasadas</span>
+      <span><i style="background:var(--p-cen)"></i>central</span>
+      <span><i style="background:var(--p-der)"></i>derecha</span>
+      <span><i style="background:var(--p-suma)"></i>aporte de las otras</span>
       <span><i style="background:#ddd"></i>ciclo evaluado</span>
-    </div>
-    <div class="resultados" style="margin-top:10px">
-      <div class="dato" id="res-cv"><div class="etq">CV</div><div class="val"></div></div>
-      <div class="dato" id="res-dosis"><div class="etq">Dosis media</div><div class="val"></div></div>
     </div>
     <p class="ayuda" id="res-mitades"></p>
   </section>

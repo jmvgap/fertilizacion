@@ -28,23 +28,24 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-header.barra {
-  position: sticky; top: 0; z-index: 10;
-  background: var(--verde); color: #fff;
-  padding: 10px 16px;
-  display: flex; align-items: center; gap: 10px;
-}
-header.barra .titulos { flex: 1; min-width: 0; }
-header.barra h1 { font-size: 17px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-header.barra .sub { font-size: 13px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-header.barra .btn-info { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff;
-  background: none; color: #fff; font: italic 700 16px Georgia, serif; cursor: pointer; }
 .acerca p { margin: 6px 0; }
 .acerca a { color: var(--verde); }
 
-main { padding: 12px 16px 96px; max-width: 760px; margin: 0 auto; }
+main { padding: 12px 16px calc(var(--alto-nav, 64px) + 12px); max-width: 960px; margin: 0 auto; }
 section.pantalla { display: none; }
 section.pantalla.activa { display: block; }
+/* Pantallas que ocupan exactamente el alto disponible, sin desplazamiento */
+section.pantalla.llena.activa {
+  display: flex; flex-direction: column; gap: 6px;
+  height: calc(100dvh - var(--alto-nav, 64px) - 24px); min-height: 280px;
+}
+
+.titulo-app { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.titulo-app > div { flex: 1; }
+.titulo-app b { display: block; font-size: 18px; color: var(--verde-osc); }
+.titulo-app small { color: var(--texto-suave); }
+.btn-info { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--verde);
+  background: #fff; color: var(--verde); font: italic 700 16px Georgia, serif; cursor: pointer; }
 
 nav.pestanas {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
@@ -97,14 +98,18 @@ button.btn:disabled { opacity: .5; }
 .segmentado button.activa { background: var(--verde); color: #fff; }
 
 /* Tira horizontal de cajas: misma disposición que en el campo */
-.tarjeta-tira h2 small { font-weight: 400; margin-left: 6px; }
+.cabecera-cajas { display: flex; align-items: center; gap: 10px; }
+.cabecera-cajas .ayuda { flex: 1; margin: 0; }
+button.btn.chico { padding: 5px 10px; font-size: 14px; }
 .tira-cajas {
+  flex: 1; min-height: 0;
   display: flex; gap: 4px; overflow-x: auto; overscroll-behavior-x: contain;
-  padding: 4px 2px 10px; margin: 0 -4px 6px; scroll-padding: 0 40px;
+  padding: 4px 2px 8px; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: var(--radio);
 }
+.nota-cajas { margin: 0; font-size: 12px; }
 .col-caja { flex: 0 0 60px; display: flex; flex-direction: column; }
 .col-caja .barra-cont {
-  height: 130px; display: flex; align-items: flex-end; justify-content: center;
+  flex: 1; min-height: 40px; display: flex; align-items: flex-end; justify-content: center;
   border-bottom: 2px solid #9aa59d; position: relative;
 }
 .col-caja .barra { width: 70%; background: var(--p-cen); border-radius: 3px 3px 0 0; min-height: 0; }
@@ -124,7 +129,6 @@ button.btn:disabled { opacity: .5; }
 /* Gráficos */
 .grafico { width: 100%; display: block; touch-action: pan-y; }
 .grafico text { font-size: 11px; fill: var(--texto-suave); font-family: inherit; }
-.fijo { position: sticky; top: 46px; z-index: 5; background: var(--fondo); padding-top: 4px; }
 .leyenda { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--texto-suave); margin-top: 4px; }
 .leyenda i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -2px; margin-right: 4px; }
 
@@ -138,11 +142,41 @@ button.btn:disabled { opacity: .5; }
 .resultados .dato.mal .val { color: var(--error); }
 .resultados .dato.bien .val { color: var(--ok); }
 
-.control-ancho { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; }
-.control-ancho input[type=range] { flex: 1; accent-color: var(--verde); height: 32px; }
-.control-ancho button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--verde);
+.control-ancho { display: flex; align-items: center; gap: 8px; }
+.ancho-bloque { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.control-ancho input[type=range] { width: 100%; accent-color: var(--verde); height: 28px; margin: 0; }
+.control-ancho button { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--verde);
   background: #fff; color: var(--verde); font-size: 22px; line-height: 1; }
-.ancho-valor { font-size: 22px; font-weight: 700; text-align: center; }
+.ancho-valor { font-size: 18px; font-weight: 700; text-align: center; }
+
+/* Pasadas */
+.controles-pasadas { display: flex; flex-direction: column; gap: 6px; }
+.controles-pasadas .resultados .dato { padding: 4px 10px; }
+.controles-pasadas .resultados .dato .etq, .controles-pasadas .resultados .dato .val { white-space: nowrap; }
+.controles-pasadas .resultados .dato .val { font-size: 22px; }
+.contenedor-grafico { flex: 1; min-height: 120px; position: relative; }
+.contenedor-grafico svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#p-pasadas .leyenda { margin: 0; font-size: 11px; }
+#res-mitades { margin: 0; font-size: 12px; }
+
+/* Celular apaisado: todo más compacto, los controles en una sola línea */
+@media (orientation: landscape) and (max-height: 560px) {
+  main { padding-top: 6px; padding-bottom: calc(var(--alto-nav, 44px) + 6px); }
+  section.pantalla.llena.activa { height: calc(100dvh - var(--alto-nav, 44px) - 12px); min-height: 220px; gap: 4px; }
+  nav.pestanas button { flex-direction: row; justify-content: center; gap: 6px; padding: 5px 2px; font-size: 13px; }
+  nav.pestanas button svg { width: 20px; height: 20px; }
+  .controles-pasadas { flex-direction: row; align-items: center; gap: 10px; }
+  .controles-pasadas .segmentado button { padding: 6px 10px; }
+  .controles-pasadas .control-ancho { flex: 1; }
+  .control-ancho button { width: 34px; height: 34px; font-size: 20px; }
+  .ancho-valor { font-size: 15px; }
+  .controles-pasadas .resultados .dato { padding: 2px 8px; }
+  .controles-pasadas .resultados .dato .etq { font-size: 11px; }
+  .controles-pasadas .resultados .dato .val { font-size: 18px; }
+  .nota-cajas { display: none; }
+  .col-caja input { padding: 5px 2px; }
+  .col-caja .pos { margin-bottom: 1px; }
+}
 
 .lista-ensayos { list-style: none; margin: 0; padding: 0; }
 .lista-ensayos li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--borde); }
