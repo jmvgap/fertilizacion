@@ -2,7 +2,7 @@
 // Calculadora de Fertilización · © 2026 Juan Manuel Vázquez
 // Guarda la app en el teléfono para que funcione sin conexión en el campo.
 // Al publicar cambios hay que subir el número de versión.
-const VERSION = "fertilizacion-v5";
+const VERSION = "fertilizacion-v6";
 const ARCHIVOS = [
   "./", "index.html", "manifest.webmanifest", "css/estilos.css",
   "js/motor.js", "js/graficos.js", "js/catalogo.js", "js/ejemplos.js", "js/app.js",

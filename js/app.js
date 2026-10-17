@@ -106,7 +106,7 @@
   }
 
   // ---------- Navegación ----------
-  const VERSION = "2.3.0";
+  const VERSION = "2.3.1";
   let pantallaAnterior = "ensayo";
   $("#version-app").textContent = VERSION;
   $("#btn-acerca").onclick = () => { if (pantalla !== "acerca") pantallaAnterior = pantalla; irA("acerca"); };
@@ -382,7 +382,7 @@
     const s = Motor.superponer(r.valores, ensayo.dCentros, ensayo.ancho, alt);
     const g = Motor.graficoPasadas(r.valores, ensayo.dCentros, ensayo.ancho, alt);
     const paso = s.xs.length > 1 ? s.xs[1] - s.xs[0] : ensayo.ancho;
-    Graficos.pasadas(svg, { ...g, d: ensayo.dCentros, w: ensayo.ancho, media: s.media, etqY: "g/caja",
+    Graficos.pasadas(svg, { ...g, d: ensayo.dCentros, w: ensayo.ancho, media: s.media, etqY: "g",
       alto: Math.max($("#cont-pasadas").clientHeight, 120),
       ciclo: [s.xs[0] - paso / 2, s.xs[s.xs.length - 1] + paso / 2],
       marcada: barraMarcada, onClick: (i) => { barraMarcada = i; dibujarPasadas(); } });
@@ -557,11 +557,23 @@
   // ---------- Inicio ----------
   // El alto de la barra de pestañas define cuánto lugar queda para las
   // pantallas que ocupan toda la altura (Cajas y Pasadas).
+  // Se usa el alto real de la ventana (más confiable que 100dvh en las apps
+  // instaladas). Mientras el teclado está abierto no se recalcula, para que la
+  // pantalla no se achique; al cerrarse, la vista vuelve arriba.
+  const pantallasLlenas = ["cajas", "pasadas"];
   function medirNav() {
-    document.documentElement.style.setProperty("--alto-nav", $("#pestanas").offsetHeight + "px");
+    const raiz = document.documentElement.style;
+    raiz.setProperty("--alto-nav", $("#pestanas").offsetHeight + "px");
+    const escribiendo = document.activeElement && document.activeElement.tagName === "INPUT";
+    if (!escribiendo) raiz.setProperty("--alto-vista", window.innerHeight + "px");
   }
   medirNav();
   window.addEventListener("resize", medirNav);
+  document.addEventListener("focusout", () => setTimeout(() => {
+    if (document.activeElement && document.activeElement.tagName === "INPUT") return; // pasó a otra casilla
+    medirNav();
+    if (pantallasLlenas.includes(pantalla)) window.scrollTo(0, 0);
+  }, 300));
   window.addEventListener("resize", () => { clearTimeout(dibujar.h); dibujar.h = setTimeout(dibujar, 150); });
   irA(Motor.hayDatos(ensayo.valores) ? "pasadas" : "ensayo");
 

@@ -37,8 +37,11 @@ const Graficos = (() => {
     svg.setAttribute("viewBox", `0 0 ${ancho} ${alto}`);
     svg.setAttribute("height", alto);
     const m = { izq: 40, der: 10, arr: 10, aba: 28, ...opciones.margenes };
-    const ym = marcas(ymax);
-    const ytop = ym[ym.length - 1];
+    // "ajustado": el eje llega apenas por encima del máximo (no se redondea
+    // hacia arriba), para no dejar espacio vacío sobre el gráfico.
+    let ym = marcas(ymax);
+    let ytop = ym[ym.length - 1];
+    if (opciones.ajustado) { ytop = ymax * 1.03; ym = ym.filter((v) => v <= ytop); }
     const sx = (x) => m.izq + ((x - xmin) / (xmax - xmin || 1)) * (ancho - m.izq - m.der);
     const sy = (y) => alto - m.aba - (y / ytop) * (alto - m.arr - m.aba);
     const ejes = el("g", {}, svg);
@@ -47,7 +50,11 @@ const Graficos = (() => {
       const t = el("text", { x: m.izq - 4, y: sy(y) + 4, "text-anchor": "end" }, ejes);
       t.textContent = fmt(y, 2);
     }
-    if (opciones.etqY) {
+    if (opciones.ajustado && opciones.etqY) {
+      // Sin lugar arriba: la unidad va junto al número más alto del eje.
+      const ultimo = ejes.querySelectorAll("text");
+      if (ultimo.length) ultimo[ultimo.length - 1].textContent += " " + opciones.etqY;
+    } else if (opciones.etqY) {
       const t = el("text", { x: 4, y: m.arr + 2, "text-anchor": "start", "dominant-baseline": "hanging" }, ejes);
       t.textContent = opciones.etqY;
     }
@@ -76,7 +83,8 @@ const Graficos = (() => {
     const { barras, d } = datos;
     const xmin = barras[0].x - d / 2, xmax = barras[barras.length - 1].x + d / 2;
     const ymax = Math.max(...barras.map((b) => b.total), 0.001);
-    const c = lienzo(svg, datos.alto || 240, xmin, xmax, ymax, { etqY: datos.etqY });
+    const c = lienzo(svg, datos.alto || 240, xmin, xmax, ymax,
+      { etqY: datos.etqY, ajustado: true, margenes: { arr: 4, aba: 20 } });
     // Ciclo evaluado (sombreado)
     if (datos.ciclo) {
       el("rect", { x: c.sx(datos.ciclo[0]), y: c.m.arr, width: c.sx(datos.ciclo[1]) - c.sx(datos.ciclo[0]),
