@@ -281,3 +281,7 @@ small.eq { color: var(--texto-suave); font-size: 12px; }
 .ayuda-texto ol, .ayuda-texto ul { padding-left: 20px; margin: 6px 0; }
 .ayuda-texto li { margin-bottom: 6px; font-size: 14px; }
 .ayuda-texto h3 { margin: 10px 0 4px; }
+
+/* Botón para cambiar de módulo, al principio de cada barra de pestañas */
+nav.pestanas button.cambiar-modulo { flex: 0.8; color: var(--verde-osc); border-right: 1px solid var(--borde); background: var(--verde-claro); }
+nav.pestanas button.cambiar-modulo .flecha { font-size: 20px; line-height: 24px; font-weight: 700; }

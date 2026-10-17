@@ -59,16 +59,6 @@
     </div>
 
     <div class="tarjeta">
-      <h2>Evaluación</h2>
-      <p class="ayuda" style="margin:0 0 8px">Escala de colores del CV: <span class="cv-bueno">verde</span> hasta el primer límite, <span class="cv-medio">amarillo</span> hasta el segundo y <span class="cv-malo">rojo</span> por encima.</p>
-      <div class="fila">
-        <label class="campo"><span>Verde hasta (% de CV)</span><input type="text" inputmode="decimal" data-campo="cvBueno" data-tipo="numero"></label>
-        <label class="campo"><span>Amarillo hasta (% de CV)</span><input type="text" inputmode="decimal" data-campo="cvAceptable" data-tipo="numero"></label>
-      </div>
-      <label class="campo"><span>Paso de la curva de CV (m)</span><input type="text" inputmode="decimal" data-campo="wPaso" data-tipo="numero"></label>
-    </div>
-
-    <div class="tarjeta">
       <h2>Guardar y abrir ensayos</h2>
       <p class="ayuda">Acá no se carga nada. Con <b>Guardar</b>, el ensayo que estás viendo queda archivado en este celular con su nombre, para volver a abrirlo después. <b>Nuevo</b> empieza uno en blanco. <b>Exportar CSV</b> genera un archivo para abrir en Excel o mandar por correo.</p>
       <div class="botones">
@@ -160,7 +150,8 @@
       <label class="campo" style="max-width:220px"><span>Precio (U$S/t)</span><input type="text" inputmode="numeric" id="nf-precio"></label>
       <div class="botones"><button class="btn" id="nf-agregar">Agregar</button></div>
     </details>
-    <div class="botones"><button class="btn sec" id="btn-editar-lista">Editar lista</button>
+    <div class="botones"><button class="btn" id="btn-actualizar-precios">Actualizar precios</button>
+      <button class="btn sec" id="btn-editar-lista">Editar lista</button>
       <button class="btn sec" id="btn-restaurar-fert">Volver a la lista original</button></div>
   </section>
 
@@ -194,8 +185,9 @@
       <h2>Ayuda</h2>
       <details open>
         <summary>Cómo usar el módulo Distribución</summary>
+        <p>Para pasar de una pantalla a otra podés tocar las pestañas de abajo o deslizar el dedo de costado. El botón ⇄ de la barra cambia de módulo.</p>
         <ol>
-          <li><b>Ensayo:</b> cargá el nombre, la máquina y el fertilizante; la cantidad de cajas y la distancia entre ellas, medida <b>de centro a centro</b>; y la medida de la boca de la caja si querés la dosis en kg/ha. También podés cambiar los límites de la escala de colores del CV.</li>
+          <li><b>Ensayo:</b> cargá el nombre, la máquina y el fertilizante; la cantidad de cajas y la distancia entre ellas, medida <b>de centro a centro</b>; y la medida de la boca de la caja si querés la dosis en kg/ha.</li>
           <li><b>Cajas:</b> cargá el peso de cada caja en orden. La caja 1 es la del extremo izquierdo mirando en el sentido de avance. Si una caja no tiene dato, dejala vacía y se interpola entre sus vecinas; si no recogió nada, poné 0. Es más cómodo con el celular acostado.</li>
           <li><b>Pasadas:</b> elegí <b>Continuo</b> (todas las pasadas en el mismo sentido, por ejemplo en un recorrido en redondo) o <b>Alternado</b> (ida y vuelta). Mové el ancho de trabajo y mirá cómo cambian el CV y la dosis. Tocá una barra para ver cuánto aporta cada pasada.</li>
           <li><b>Curva CV:</b> muestra el CV para cada ancho y los rangos de ancho en verde y en amarillo. Tocá la curva para elegir un ancho.</li>
@@ -208,7 +200,7 @@
         <ol>
           <li><b>Lote:</b> elegí el cultivo y cargá el rendimiento esperado, los nitratos de 0–60 cm a la siembra, el P Bray, la arcilla, la densidad aparente y la zona (norte o sur de la Pampa Deprimida).</li>
           <li><b>Dosis N y P:</b> muestra la dosis de N y las dos dosis de P: <b>suficiencia</b> (lleva el P al nivel crítico para esta campaña) y <b>construcción y mantenimiento</b> (además repone lo que se lleva la cosecha).</li>
-          <li><b>Fertilizantes:</b> actualizá los precios en U$S por tonelada. Con "Editar lista" podés quitar productos; también podés agregar otros.</li>
+          <li><b>Fertilizantes:</b> con "Actualizar precios" se descargan los últimos precios publicados; también podés cargarlos a mano en U$S por tonelada. Con "Editar lista" podés quitar productos; también podés agregar otros.</li>
           <li><b>Más económica:</b> la combinación de fertilizantes más barata que cubre la dosis. "Calibrar" lleva la dosis del producto a la calibración del módulo Distribución.</li>
         </ol>
       </details>
@@ -355,6 +347,7 @@
 </main>
 
 <nav class="pestanas" id="pestanas" data-modulo="distribucion">
+  <button class="cambiar-modulo" data-ir-modulo="recomendacion" aria-label="Ir a Recomendación y costos"><span class="flecha">⇄</span>Recomend.</button>
   <button data-p="ensayo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Ensayo</button>
   <button data-p="cajas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V12M9 20V7M14 20V9M19 20v-6"/></svg>Cajas</button>
   <button data-p="pasadas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 18c3-8 5-8 8 0M8 18c3-8 5-8 8 0M14 18c3-8 5-8 8 0"/></svg>Pasadas</button>
@@ -362,6 +355,7 @@
   <button data-p="dosis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M9 3h6"/></svg>Dosis</button>
 </nav>
 <nav class="pestanas" id="pestanas-reco" data-modulo="recomendacion" hidden>
+  <button class="cambiar-modulo" data-ir-modulo="distribucion" aria-label="Ir a Distribución"><span class="flecha">⇄</span>Distrib.</button>
   <button data-p="lote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 20V9l7-5 7 5v11"/><path d="M9 20v-6h6v6"/></svg>Lote</button>
   <button data-p="reco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6l-1 5 4 11a2 2 0 0 1-2 3H8a2 2 0 0 1-2-3l4-11z"/><path d="M8 14h8"/></svg>Dosis N y P</button>
   <button data-p="fert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l1 5H5z"/><path d="M5 8v12h14V8"/><path d="M12 11v6M9 14h6"/></svg>Fertilizantes</button>

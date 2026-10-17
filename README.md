@@ -5,7 +5,7 @@ Web app instalable en el celular que funciona sin conexión. El módulo **Distri
 **Usarla:** https://jmvgap.github.io/fertilizacion/. Desde Chrome en Android: menú ⋮ → *Agregar a la pantalla principal*.
 
 ## Módulo Distribución
-- **Ensayo:** datos, cantidad y distancia entre cajas (de centro a centro), boca de caja y escala de colores del CV (verde hasta 15 %, amarillo hasta 25 %, rojo arriba; editable). Permite guardar y abrir ensayos y exportarlos o importarlos en CSV.
+- **Ensayo:** datos, cantidad y distancia entre cajas (de centro a centro), boca de caja. CV en colores: verde hasta 15 %, amarillo hasta 25 % y rojo arriba. Permite guardar y abrir ensayos y exportarlos o importarlos en CSV.
 - **Cajas:** carga de pesos en una fila horizontal que se desliza de costado, como las cajas en el campo, con la barra de cada caja sobre su casilla. Una caja vacía se interpola; un 0 es un dato.
 - **Pasadas:** deslizador de ancho de trabajo y tres pasadas (roja, verde y azul). Capas: en amarillo la suma de todas las pasadas, delante las vecinas completas y adelante de todo la central. Tocando una barra se ve el aporte de cada pasada. Muestra el CV y la dosis media.
 - **Curva CV:** CV según el ancho, en modo continuo y alternado, con los rangos de ancho en verde y en amarillo. Las mitades del alternado son opcionales.
@@ -17,7 +17,7 @@ Web app instalable en el celular que funciona sin conexión. El módulo **Distri
   - N por umbral.
   - P con dos dosis: **suficiencia** (lleva el P al nivel crítico para esta campaña) y **construcción y mantenimiento** (además repone lo que exporta la cosecha).
   - Todo en kg de elemento, con el equivalente en P₂O₅.
-- **Fertilizantes:** catálogo compartido con grado y grado equivalente, precios en U$S/t guardados con su fecha, y costo por kg de N, de P y de P₂O₅.
+- **Fertilizantes:** catálogo compartido con grado y grado equivalente, precios en U$S/t guardados con su fecha (el botón "Actualizar precios" descarga los de [`precios.json`](precios.json), que se edita desde GitHub), y costo por kg de N, de P y de P₂O₅.
 - **Más económica:** prueba todas las combinaciones de uno o dos productos y ordena por costo. "Calibrar" lleva la dosis del producto a la calibración del módulo Distribución.
 
 ## Cómo calcula

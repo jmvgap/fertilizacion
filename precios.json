@@ -1,0 +1,14 @@
+{
+  "fecha": null,
+  "nota": "Precios en U$S por tonelada. Valores tomados de la app Ferti (2025): reemplazarlos por precios actuales.",
+  "precios": {
+    "urea": 522,
+    "dap": 880,
+    "map": 883,
+    "can": 450,
+    "spt": 800,
+    "sps": 397,
+    "kcl": null,
+    "sa": null
+  }
+}

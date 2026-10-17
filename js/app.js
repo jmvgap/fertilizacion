@@ -29,7 +29,7 @@
       id: null, nombre: "", fecha: new Date().toISOString().slice(0, 10),
       maquina: "", fertilizante: "",
       nCajas: 15, dCentros: 2, bocaAncho: null, bocaLargo: null,
-      cvBueno: 15, cvAceptable: 25, wPaso: 1, modo: "continuo",
+      modo: "continuo",
       valores: new Array(15).fill(null),
     };
     e.ancho = anchoInicial(e);
@@ -76,8 +76,7 @@
 
   // Escala de CV: verde hasta "bueno", amarillo hasta "aceptable", rojo arriba.
   function limitesCV() {
-    const a = ensayo.cvBueno > 0 ? ensayo.cvBueno : 15, b = ensayo.cvAceptable > 0 ? ensayo.cvAceptable : 25;
-    return [Math.min(a, b), Math.max(a, b)];
+    return [15, 25]; // valores fijos (el usuario sacó el apartado Evaluación)
   }
   function claseCV(cv) {
     const [bueno, aceptable] = limitesCV();
@@ -106,7 +105,7 @@
   }
 
   // ---------- Navegación ----------
-  const VERSION = "3.2.0";
+  const VERSION = "3.3.0";
   let pantallaAnterior = "ensayo";
   $("#version-app").textContent = VERSION;
   $$("[data-acerca]").forEach((b) => { b.onclick = () => { if (pantalla !== "acerca" && pantalla !== "ayuda") pantallaAnterior = pantalla; irA("acerca"); }; });
@@ -134,7 +133,29 @@
     medirNav();
     dibujar();
   }
-  $$("nav.pestanas button").forEach((b) => b.addEventListener("click", () => irA(b.dataset.p)));
+  $$("nav.pestanas button[data-p]").forEach((b) => b.addEventListener("click", () => irA(b.dataset.p)));
+
+  // Deslizar el dedo de costado pasa a la pantalla vecina del mismo módulo.
+  // No actúa donde ya hay algo que se desliza de costado (fila de cajas,
+  // deslizador del ancho, tablas, informe).
+  let toque = null;
+  const zonasPropias = ".tira-cajas, input, select, textarea, .control-ancho, .tabla-desliza, .informe, details";
+  document.querySelector("main").addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1 || e.target.closest(zonasPropias)) { toque = null; return; }
+    toque = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+  }, { passive: true });
+  document.querySelector("main").addEventListener("touchend", (e) => {
+    if (!toque) return;
+    const dx = e.changedTouches[0].clientX - toque.x, dy = e.changedTouches[0].clientY - toque.y;
+    const rapido = Date.now() - toque.t < 700;
+    toque = null;
+    if (!rapido || Math.abs(dx) < 70 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+    const modulo = moduloDe(pantalla);
+    if (!modulo) return;
+    const orden = $$(`nav.pestanas[data-modulo="${modulo}"] button[data-p]`).map((b) => b.dataset.p);
+    const i = orden.indexOf(pantalla) + (dx < 0 ? 1 : -1);
+    if (i >= 0 && i < orden.length) irA(orden[i]);
+  }, { passive: true });
   $$("[data-ir-modulo]").forEach((b) => b.addEventListener("click", () => irA(ultimaDeModulo[b.dataset.irModulo])));
 
   function dibujar() {
@@ -240,7 +261,7 @@
   };
 
   // ---------- CSV (separador ; y coma decimal, para Excel en castellano) ----------
-  const CAMPOS_CSV = ["nombre", "fecha", "maquina", "fertilizante", "dCentros", "bocaAncho", "bocaLargo", "cvBueno", "cvAceptable"];
+  const CAMPOS_CSV = ["nombre", "fecha", "maquina", "fertilizante", "dCentros", "bocaAncho", "bocaLargo"];
   const num = (v) => (v === null || v === undefined ? "" : String(+v.toFixed(6)).replace(".", ","));
 
   $("#btn-exportar").onclick = () => {
@@ -278,7 +299,7 @@
         const [clave, ...resto] = linea.slice(1).split(";");
         const c = clave.trim(), v = resto.join(";").trim();
         if (CAMPOS_CSV.includes(c)) {
-          if (["dCentros", "bocaAncho", "bocaLargo", "cvBueno", "cvAceptable"].includes(c)) { const r = Motor.leerNumero(v); if (r.ok) e[c] = r.valor; }
+          if (["dCentros", "bocaAncho", "bocaLargo"].includes(c)) { const r = Motor.leerNumero(v); if (r.ok) e[c] = r.valor; }
           else e[c] = v;
         }
         continue;
@@ -439,7 +460,7 @@
     if (!r.ok) { aviso("#aviso-cv", r.mensaje, "error"); $("#g-cv").innerHTML = ""; $("#resumen-cv").innerHTML = ""; $("#tabla-cv").innerHTML = ""; return; }
     aviso("#aviso-cv", avisoPerfilCortado(r));
     const [bueno, aceptable] = limitesCV();
-    const paso = ensayo.wPaso > 0 ? ensayo.wPaso : 1;
+    const paso = 1; // m
     const desde = anchoMin(), hasta = anchoMax();
     const cont = Motor.curvaCV(r.valores, ensayo.dCentros, desde, hasta, paso, false);
     const alt = Motor.curvaCV(r.valores, ensayo.dCentros, desde, hasta, paso, true);
@@ -680,7 +701,7 @@
       ])}</section>`;
 
     // Curva de CV.
-    const pasoCurva = ensayo.wPaso > 0 ? ensayo.wPaso : 1;
+    const pasoCurva = 1; // m
     const cCont = Motor.curvaCV(r.valores, ensayo.dCentros, anchoMin(), anchoMax(), pasoCurva, false);
     const cAlt = Motor.curvaCV(r.valores, ensayo.dCentros, anchoMin(), anchoMax(), pasoCurva, true);
     const rangos = (curva, lim) => {

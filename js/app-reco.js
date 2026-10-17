@@ -179,6 +179,32 @@
     }));
   }
 
+  // Precios publicados en el repositorio (precios.json), que el autor
+  // actualiza desde GitHub. Solo cambia el precio de los productos que
+  // figuran en el archivo; los agregados por el usuario no se tocan.
+  $("#btn-actualizar-precios").onclick = async () => {
+    let datos;
+    try {
+      const r = await fetch("precios.json", { cache: "no-cache" });
+      if (!r.ok) throw new Error(r.status);
+      datos = await r.json();
+    } catch {
+      toast("No se pudieron descargar los precios: revisá la conexión");
+      return;
+    }
+    const fecha = datos.fecha ? datos.fecha.split("-").reverse().join("/") : "sin fecha";
+    if (!confirm(`Se reemplazan los precios por los publicados el ${fecha}. ¿Seguir?`)) return;
+    let cambiados = 0;
+    for (const [id, precio] of Object.entries(datos.precios || {})) {
+      const f = catalogo.find((x) => x.id === id);
+      if (f) { f.precio = precio > 0 ? Math.round(precio) : null; cambiados++; }
+    }
+    if (datos.fecha) escribir(CLAVE_FECHA, datos.fecha);
+    guardarCatalogo();
+    dibujarFert();
+    toast(`Precios actualizados (${cambiados} productos, ${fecha})`);
+  };
+
   let editandoLista = false;
   $("#btn-editar-lista").onclick = () => { editandoLista = !editandoLista; dibujarFert(); };
 
