@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de Fertilización · pruebas del motor</title>
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 16px; background: #fff; color: #222; }
+  .ok { color: #1b7a2f; } .mal { color: #b00020; font-weight: 600; }
+  pre { background: #f4f4f4; padding: 8px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Pruebas del motor</h1>
+<div id="resumen"></div>
+<ul id="lista"></ul>
+<script src="js/motor.js"></script>
+<script src="js/ejemplos.js"></script>
+<script>
+const lista = document.getElementById("lista");
+let ok = 0, mal = 0;
+function prueba(nombre, fn) {
+  let res;
+  try { res = fn(); } catch (e) { res = "excepción: " + e.message; }
+  const li = document.createElement("li");
+  if (res === true) { ok++; li.className = "ok"; li.textContent = "✔ " + nombre; }
+  else { mal++; li.className = "mal"; li.textContent = "✘ " + nombre + " → " + res; }
+  lista.appendChild(li);
+}
+const cerca = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(b));
+
+// Simulación independiente: coloca cada pasada sobre una grilla discreta
+// (solo vale cuando w es múltiplo exacto de d) y suma 60 pasadas.
+function fuerzaBruta(valores, m, alternado) {
+  const n = valores.length, campo = new Map();
+  for (let k = -30; k <= 30; k++) {
+    const espejo = alternado && Math.abs(k) % 2 === 1;
+    for (let i = 0; i < n; i++) {
+      const v = espejo ? valores[n - 1 - i] : valores[i];
+      const idx = i + k * m;
+      campo.set(idx, (campo.get(idx) || 0) + v);
+    }
+  }
+  const ini = Math.floor(n / 2), largo = alternado ? 2 * m : m, ys = [];
+  for (let j = 0; j < largo; j++) ys.push(campo.get(ini + j) || 0);
+  return ys;
+}
+
+// Réplica del cálculo de la app vieja (3 pasadas, ventana de 2 anchos).
+function appVieja(valores, m) {
+  const n = valores.length, k = n - m, largo = n + 2 * m, s = new Array(largo).fill(0);
+  for (let p = 0; p < 3; p++) for (let i = 0; i < n; i++) s[i + p * m] += valores[i];
+  const ventana = s.slice(Math.floor(n / 2), Math.floor(n / 2) + 2 * m);
+  return Motor.cv(ventana);
+}
+
+// --- Lectura de números
+prueba("lee coma decimal", () => Motor.leerNumero("12,5").valor === 12.5 || "falla");
+prueba("lee punto decimal", () => Motor.leerNumero("0.1255").valor === 0.1255 || "falla");
+prueba("vacío es 'sin dato' (null)", () => Motor.leerNumero("  ").valor === null || "falla");
+prueba("0 es un dato válido", () => Motor.leerNumero("0").valor === 0 || "falla");
+prueba("rechaza negativos", () => Motor.leerNumero("-3").ok === false || "falla");
+prueba("rechaza texto", () => Motor.leerNumero("12a").ok === false || "falla");
+prueba("rechaza dos separadores", () => Motor.leerNumero("1,2,3").ok === false || "falla");
+
+// --- Datos vacíos e interpolación
+prueba("todo vacío = sin datos", () => !Motor.hayDatos([null, null]) || "falla");
+prueba("todo en cero SÍ son datos", () => Motor.hayDatos([0, 0, 0]) || "falla");
+prueba("interpola entre medidas no vecinas", () => {
+  const r = Motor.completar([2, null, null, 8]);
+  return (r.valores[1] === 4 && r.valores[2] === 6 && r.interpoladas[1]) || JSON.stringify(r);
+});
+prueba("no inventa extremos", () => {
+  const r = Motor.completar([null, 3, null, 5, null, null]);
+  return (r.faltanIzq === 1 && r.faltanDer === 2 && r.valores[2] === 4) || JSON.stringify(r);
+});
+prueba("redimensionar conserva el centro", () =>
+  JSON.stringify(Motor.redimensionar([1, 2, 3], 5)) === "[null,1,2,3,null]" || "falla");
+
+// --- Superposición contra fuerza bruta, todos los anchos múltiplos de d
+const ej = EJEMPLOS[0];
+const vals = ej.valores, d = ej.dCentros, n = vals.length;
+for (const alt of [false, true]) {
+  prueba(`${alt ? "alternado" : "continuo"}: igual a fuerza bruta en todos los anchos (1 a ${n} cajas)`, () => {
+    for (let m = 1; m <= n; m++) {
+      const a = Motor.superponer(vals, d, m * d, alt).ys, b = fuerzaBruta(vals, m, alt);
+      if (a.length !== b.length) return `m=${m} largo ${a.length} vs ${b.length}`;
+      for (let j = 0; j < a.length; j++) if (!cerca(a[j], b[j])) return `m=${m} j=${j}: ${a[j]} vs ${b[j]}`;
+    }
+    return true;
+  });
+}
+
+prueba("perfil plano de 10 cajas: CV = 0 si el ancho divide a 10, y > 0 si no", () => {
+  const u = new Array(10).fill(5);
+  for (let m = 1; m <= 10; m++) {
+    const c = Motor.superponer(u, 1, m, false).cv;
+    if (10 % m === 0 ? c > 1e-9 : !(c > 1)) return `m=${m}: ${c}`;
+  }
+  return true;
+});
+
+prueba("ancho no múltiplo de d: la media de dosis se conserva (masa / ancho)", () => {
+  const masa = vals.reduce((s, v) => s + v, 0) * d;
+  for (const w of [7.3, 11.75, 15.5]) {
+    const s = Motor.superponer(vals, d, w, false);
+    // La media del ciclo debe aproximar masa/w (error chico por la interpolación).
+    if (Math.abs(s.media - masa / w) / (masa / w) > 0.03) return `w=${w}: ${s.media} vs ${masa / w}`;
+  }
+  return true;
+});
+
+prueba("anchos chicos: la app vieja exagera el CV y el motor nuevo no", () => {
+  const m = Math.floor(n / 3); // ancho menor a la mitad del ancho cubierto
+  const viejo = appVieja(vals, m), nuevo = Motor.superponer(vals, d, m * d, false).cv;
+  const bruto = Motor.cv(fuerzaBruta(vals, m, false));
+  return (cerca(nuevo, bruto) && viejo > nuevo + 1) || `viejo ${viejo.toFixed(1)} nuevo ${nuevo.toFixed(1)} bruto ${bruto.toFixed(1)}`;
+});
+
+prueba("anchos grandes: coincide con la app vieja (salvo n-1 sobre 1 vs 2 ciclos)", () => {
+  const m = n - 2, viejo = appVieja(vals, m), nuevo = Motor.superponer(vals, d, m * d, false).cv;
+  return Math.abs(viejo - nuevo) < 0.05 * nuevo + 0.5 || `viejo ${viejo} nuevo ${nuevo}`;
+});
+
+prueba("alternado: ciclo completo ≥ promedio de las mitades (en varianza)", () => {
+  for (let m = 2; m <= n; m++) {
+    const s = Motor.superponer(vals, d, m * d, true);
+    const v = (c, med) => (c * med / 100) ** 2;
+    const prom = (v(s.mitades[0].cv, s.mitades[0].media) + v(s.mitades[1].cv, s.mitades[1].media)) / 2;
+    const tot = v(s.cv, s.media);
+    if (tot < prom * ((m - 1) / m) - 1e-9) return `m=${m}`;
+  }
+  return true;
+});
+
+prueba("rangos aceptables: detecta dos tramos separados", () => {
+  const c = [5, 8, 20, 30, 12, 9, 25].map((cv, i) => ({ w: i + 1, cv }));
+  const r = Motor.rangosAceptables(c, 15);
+  return JSON.stringify(r) === '[{"desde":1,"hasta":2},{"desde":5,"hasta":6}]' || JSON.stringify(r);
+});
+
+// --- Dosis
+prueba("kg/ha por caudal: 120 kg/min, 10 km/h, 20 m = 360", () =>
+  cerca(Motor.kgHaDesdeCaudal(120, 10, 20), 360) || "falla");
+prueba("caudal para dosis (inversa)", () =>
+  cerca(Motor.caudalParaDosis(360, 10, 20), 120) || "falla");
+prueba("gramos a kg/ha: 5 g en boca 50×50 cm = 200 kg/ha", () =>
+  cerca(Motor.gramosAKgHa(5, 50, 50), 200) || "falla");
+
+document.getElementById("resumen").innerHTML =
+  `<p class="${mal ? "mal" : "ok"}">${ok} pruebas bien, ${mal} con error</p>`;
+document.title = `pruebas ${ok}/${ok + mal}`;
+</script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2e7d32">
+<title>Calculadora de Fertilización</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="iconos/icono-192.png">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<header class="barra">
+  <div class="titulos">
+    <h1>Calculadora de Fertilización</h1>
+    <div class="sub">Distribución<span id="sub-ensayo"></span></div>
+  </div>
+  <button class="btn-info" id="btn-acerca" aria-label="Acerca de">i</button>
+</header>
+
+<main>
+  <!-- ============ ENSAYO ============ -->
+  <section class="pantalla" id="p-ensayo">
+    <div class="tarjeta">
+      <h2>Datos del ensayo</h2>
+      <label class="campo"><span>Nombre</span><input type="text" data-campo="nombre" placeholder="Ej.: Lote 4 – urea"></label>
+      <div class="fila">
+        <label class="campo"><span>Fecha</span><input type="date" data-campo="fecha"></label>
+        <label class="campo"><span>Fertilizante</span><input type="text" data-campo="fertilizante" list="lista-fert"></label>
+      </div>
+      <label class="campo"><span>Máquina</span><input type="text" data-campo="maquina"></label>
+      <datalist id="lista-fert"></datalist>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Cajas</h2>
+      <div class="fila">
+        <label class="campo"><span>Cantidad de cajas</span><input type="text" inputmode="numeric" data-campo="nCajas" data-tipo="entero"></label>
+        <label class="campo"><span>Distancia entre cajas (m)</span><input type="text" inputmode="decimal" data-campo="dCentros" data-tipo="numero"></label>
+      </div>
+      <svg class="grafico" id="esquema-cajas" style="max-width:300px"></svg>
+      <p class="ayuda">La distancia se mide <b>de centro a centro</b> de caja.</p>
+      <h3>Boca de la caja (para calcular kg/ha)</h3>
+      <div class="fila">
+        <label class="campo"><span>Ancho (cm)</span><input type="text" inputmode="decimal" data-campo="bocaAncho" data-tipo="numero"></label>
+        <label class="campo"><span>Largo (cm)</span><input type="text" inputmode="decimal" data-campo="bocaLargo" data-tipo="numero"></label>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Evaluación</h2>
+      <div class="fila">
+        <label class="campo"><span>CV aceptable (%)</span><input type="text" inputmode="decimal" data-campo="umbral" data-tipo="numero"></label>
+        <label class="campo"><span>Paso de la curva de CV (m)</span><input type="text" inputmode="decimal" data-campo="wPaso" data-tipo="numero"></label>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Ensayos guardados</h2>
+      <div class="botones">
+        <button class="btn" id="btn-guardar">Guardar</button>
+        <button class="btn sec" id="btn-nuevo">Nuevo</button>
+        <button class="btn sec" id="btn-ejemplo">Cargar ejemplo</button>
+        <button class="btn sec" id="btn-exportar">Exportar CSV</button>
+        <button class="btn sec" id="btn-importar">Importar CSV</button>
+        <input type="file" id="archivo-csv" accept=".csv,text/csv,text/plain" hidden>
+      </div>
+      <ul class="lista-ensayos" id="lista-ensayos"></ul>
+    </div>
+  </section>
+
+  <!-- ============ ACERCA DE ============ -->
+  <section class="pantalla" id="p-acerca">
+    <div class="tarjeta acerca">
+      <h2>Calculadora de Fertilización</h2>
+      <p class="ayuda">Módulo Distribución · versión <span id="version-app"></span></p>
+      <p>Ensayo de distribución transversal de fertilizadoras con bandejas: superposición de pasadas, coeficiente de variación según el ancho de trabajo y dosis.</p>
+      <h3>Desarrollo</h3>
+      <p><b>Ing. Agr. Juan Manuel Vázquez</b><br>
+        Departamento de Tecnología, Universidad Nacional de Luján<br>
+        Facultad de Ciencias Agrarias y Forestales, Universidad Nacional de La Plata</p>
+      <p class="ayuda">Desarrollo personal con fines académicos y de extensión. No es una publicación oficial de dichas instituciones.</p>
+      <h3>Antecedente</h3>
+      <p>Basada en la aplicación FERTICALC (2016), diseñada por Ing. Agr. Roberto Balbuena e Ing. Agr. Juan Manuel Vázquez (Mecanización Agraria, FCAyF–UNLP) y desarrollada por Lic. Nicolás Carlini e Ing. Marcelo Taffarel. Esta versión fue reescrita por completo, con un nuevo método de cálculo de superposición y CV de ciclo completo.</p>
+      <h3>Cómo calcula</h3>
+      <p class="ayuda">Suma todas las pasadas que alcanzan cada punto del lote (no solo las vecinas) y calcula el CV sobre un ciclo completo: un ancho de trabajo en modo continuo y dos anchos en alternado. Las mitades del alternado se muestran como dato complementario.</p>
+      <h3>Licencia</h3>
+      <p class="ayuda">Software libre bajo la licencia GNU GPL versión 3. Podés usarlo, copiarlo y modificarlo; si distribuís una versión modificada, tiene que mantenerse libre bajo la misma licencia. Se ofrece sin garantía.<br>
+        Código fuente: <a href="https://github.com/jmvgap/fertilizacion" target="_blank" rel="noopener">github.com/jmvgap/fertilizacion</a></p>
+      <div class="botones"><button class="btn sec" id="btn-volver">Volver</button></div>
+    </div>
+  </section>
+
+  <!-- ============ CAJAS (perfil único) ============ -->
+  <section class="pantalla" id="p-cajas">
+    <div class="fijo">
+      <svg class="grafico" id="g-perfil"></svg>
+      <div class="leyenda">
+        <span><i style="background:var(--p-cen)"></i>medida</span>
+        <span><i style="background:var(--interp);opacity:.6"></i>interpolada</span>
+        <span><i style="background:var(--error);height:3px"></i>sin dato</span>
+      </div>
+      <div id="aviso-cajas"></div>
+    </div>
+    <div class="tarjeta">
+      <h2>Peso por caja (g)</h2>
+      <p class="ayuda" style="margin-bottom:8px">Caja 1 = extremo izquierdo mirando en el sentido de avance. Dejá vacía una caja sin dato (se interpola); si pesó cero, poné 0.</p>
+      <div class="grilla-cajas" id="grilla-cajas"></div>
+      <div class="botones"><button class="btn peligro" id="btn-borrar-valores">Borrar todos los pesos</button></div>
+    </div>
+  </section>
+
+  <!-- ============ PASADAS ============ -->
+  <section class="pantalla" id="p-pasadas">
+    <div class="segmentado" id="modo-pasadas">
+      <button data-modo="continuo">Continuo (ida y vuelta igual)</button>
+      <button data-modo="alternado">Alternado</button>
+    </div>
+    <div class="ancho-valor" id="ancho-valor"></div>
+    <div class="control-ancho">
+      <button id="ancho-menos" aria-label="Menos ancho">−</button>
+      <input type="range" id="ancho-rango" aria-label="Ancho de trabajo">
+      <button id="ancho-mas" aria-label="Más ancho">+</button>
+    </div>
+    <div id="aviso-pasadas"></div>
+    <svg class="grafico" id="g-pasadas"></svg>
+    <div class="leyenda">
+      <span><i style="background:var(--p-izq)"></i>pasada izquierda</span>
+      <span><i style="background:var(--p-cen)"></i>pasada central</span>
+      <span><i style="background:var(--p-der)"></i>pasada derecha</span>
+      <span><i style="background:var(--p-suma)"></i>aporte de las otras pasadas</span>
+      <span><i style="background:#ddd"></i>ciclo evaluado</span>
+    </div>
+    <div class="resultados" style="margin-top:10px">
+      <div class="dato" id="res-cv"><div class="etq">CV</div><div class="val"></div></div>
+      <div class="dato" id="res-dosis"><div class="etq">Dosis media</div><div class="val"></div></div>
+    </div>
+    <p class="ayuda" id="res-mitades"></p>
+  </section>
+
+  <!-- ============ CURVA DE CV ============ -->
+  <section class="pantalla" id="p-cv">
+    <div id="aviso-cv"></div>
+    <div class="tarjeta">
+      <h2>CV según el ancho de trabajo</h2>
+      <svg class="grafico" id="g-cv"></svg>
+      <div class="leyenda" id="leyenda-cv"></div>
+      <p class="ayuda">Tocá la curva para elegir un ancho.</p>
+      <div id="resumen-cv"></div>
+      <label style="display:block;margin-top:8px;font-size:14px">
+        <input type="checkbox" id="ver-mitades"> Mostrar también las mitades del alternado
+      </label>
+      <div class="botones"><button class="btn sec" id="btn-ir-pasadas">Ver las pasadas con este ancho</button></div>
+    </div>
+    <details class="tarjeta"><summary>Tabla de valores</summary><div id="tabla-cv"></div></details>
+  </section>
+
+  <!-- ============ DOSIS ============ -->
+  <section class="pantalla" id="p-dosis">
+    <div class="tarjeta">
+      <h2>Dosis medida en el ensayo</h2>
+      <div id="dosis-ensayo"></div>
+    </div>
+    <div class="tarjeta">
+      <h2>Calibración con caudal</h2>
+      <h3>1. Caudal de la máquina</h3>
+      <div class="fila">
+        <label class="campo"><span>Kg recogidos</span><input type="text" inputmode="decimal" data-cal="kgRecogidos"></label>
+        <label class="campo"><span>en segundos</span><input type="text" inputmode="decimal" data-cal="segundos"></label>
+      </div>
+      <label class="campo"><span>Caudal (kg/min)</span><input type="text" inputmode="decimal" data-cal="kgMin"></label>
+      <h3>2. Condiciones de trabajo</h3>
+      <div class="fila">
+        <label class="campo"><span>Velocidad (km/h)</span><input type="text" inputmode="decimal" data-cal="vel"></label>
+        <label class="campo"><span>Ancho de trabajo (m)</span><input type="text" inputmode="decimal" data-cal="ancho"></label>
+      </div>
+      <div class="resultados"><div class="dato"><div class="etq">Dosis aplicada</div><div class="val" id="cal-dosis">—</div></div></div>
+      <h3>3. Caudal necesario para una dosis</h3>
+      <label class="campo"><span>Dosis deseada (kg/ha)</span><input type="text" inputmode="decimal" data-cal="objetivo"></label>
+      <div class="resultados"><div class="dato"><div class="etq">Caudal a regular</div><div class="val" id="cal-caudal">—</div></div></div>
+      <p class="ayuda">kg/ha = kg/min × 600 ÷ (km/h × m)</p>
+    </div>
+  </section>
+</main>
+
+<nav class="pestanas" id="pestanas">
+  <button data-p="ensayo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Ensayo</button>
+  <button data-p="cajas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V12M9 20V7M14 20V9M19 20v-6"/></svg>Cajas</button>
+  <button data-p="pasadas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 18c3-8 5-8 8 0M8 18c3-8 5-8 8 0M14 18c3-8 5-8 8 0"/></svg>Pasadas</button>
+  <button data-p="cv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M6 15c3-6 5-7 7-4s4 2 7-6"/></svg>Curva CV</button>
+  <button data-p="dosis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M9 3h6"/></svg>Dosis</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script src="js/motor.js"></script>
+<script src="js/graficos.js"></script>
+<script src="js/catalogo.js"></script>
+<script src="js/ejemplos.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
