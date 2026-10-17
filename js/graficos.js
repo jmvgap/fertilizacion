@@ -33,7 +33,7 @@ const Graficos = (() => {
   // Prepara el lienzo y devuelve funciones de escala.
   function lienzo(svg, alto, xmin, xmax, ymax, opciones = {}) {
     svg.innerHTML = "";
-    const ancho = Math.max(svg.clientWidth || svg.parentNode.clientWidth || 320, 240);
+    const ancho = opciones.anchoFijo || Math.max(svg.clientWidth || svg.parentNode.clientWidth || 320, 240);
     svg.setAttribute("viewBox", `0 0 ${ancho} ${alto}`);
     svg.setAttribute("height", alto);
     const m = { izq: 40, der: 10, arr: 10, aba: 28, ...opciones.margenes };
@@ -50,7 +50,7 @@ const Graficos = (() => {
       const t = el("text", { x: m.izq - 4, y: sy(y) + 4, "text-anchor": "end" }, ejes);
       t.textContent = fmt(y, 2);
     }
-    if (opciones.ajustado && opciones.etqY) {
+    if ((opciones.ajustado || opciones.unidadEnEje) && opciones.etqY) {
       // Sin lugar arriba: la unidad va junto al número más alto del eje.
       const ultimo = ejes.querySelectorAll("text");
       if (ultimo.length) ultimo[ultimo.length - 1].textContent += " " + opciones.etqY;
@@ -84,7 +84,7 @@ const Graficos = (() => {
     const xmin = barras[0].x - d / 2, xmax = barras[barras.length - 1].x + d / 2;
     const ymax = Math.max(...barras.map((b) => b.total), 0.001);
     const c = lienzo(svg, datos.alto || 240, xmin, xmax, ymax,
-      { etqY: datos.etqY, ajustado: true, margenes: { arr: 4, aba: 20 } });
+      { etqY: datos.etqY, ajustado: true, margenes: { arr: 4, aba: 20 }, anchoFijo: datos.anchoFijo });
     // Ciclo evaluado (sombreado)
     if (datos.ciclo) {
       el("rect", { x: c.sx(datos.ciclo[0]), y: c.m.arr, width: c.sx(datos.ciclo[1]) - c.sx(datos.ciclo[0]),
@@ -142,7 +142,7 @@ const Graficos = (() => {
     const todos = datos.series.flatMap((s) => s.puntos);
     const xmin = Math.min(...todos.map((p) => p.w)), xmax = Math.max(...todos.map((p) => p.w));
     const ymax = Math.min(Math.max(...todos.map((p) => p.cv).filter(isFinite), aceptable * 1.4), 100);
-    const c = lienzo(svg, 260, xmin, xmax, ymax, { etqY: "CV %" });
+    const c = lienzo(svg, datos.alto || 260, xmin, xmax, ymax, { etqY: "%", unidadEnEje: true, anchoFijo: datos.anchoFijo });
     ejeX(c, xmin, xmax);
     const franja = (y0, y1, fill) => el("rect", { x: c.m.izq, y: c.sy(Math.min(y1, c.ytop)), width: c.ancho - c.m.izq - c.m.der,
       height: Math.max(c.sy(y0) - c.sy(Math.min(y1, c.ytop)), 0), fill, "fill-opacity": 0.13 }, c.ejes);
@@ -172,6 +172,25 @@ const Graficos = (() => {
     }
   }
 
+  // ---------- Perfil de una pasada (para el informe) ----------
+  // datos: { valores, interpoladas, d, alto, anchoFijo }
+  function perfil(svg, datos) {
+    const { valores, interpoladas, d } = datos;
+    const n = valores.length;
+    const pos = Motor.posiciones(n, d);
+    const xmin = pos[0] - d / 2, xmax = pos[n - 1] + d / 2;
+    const ymax = Math.max(...valores.map((v) => v ?? 0), 0.001);
+    const c = lienzo(svg, datos.alto || 180, xmin, xmax, ymax,
+      { etqY: "g", ajustado: true, margenes: { arr: 4, aba: 20 }, anchoFijo: datos.anchoFijo });
+    ejeX(c, xmin, xmax);
+    const anchoBarra = Math.max(c.sx(xmin + d) - c.sx(xmin) - 2, 1);
+    valores.forEach((v, i) => {
+      if (!(v > 0)) return;
+      el("rect", { x: c.sx(pos[i]) - anchoBarra / 2, y: c.sy(v), width: anchoBarra, height: c.sy(0) - c.sy(v),
+        fill: interpoladas[i] ? color("--interp") : color("--p-cen") }, svg);
+    });
+  }
+
   // ---------- Esquema de la distancia entre cajas ----------
   function esquemaCajas(svg) {
     svg.innerHTML = "";
@@ -189,5 +208,5 @@ const Graficos = (() => {
     t2.textContent = "(no el hueco entre cajas)";
   }
 
-  return { pasadas, curvaCV, esquemaCajas, fmt };
+  return { pasadas, curvaCV, perfil, esquemaCajas, fmt };
 })();

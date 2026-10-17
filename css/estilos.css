@@ -24,6 +24,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; }
 body {
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -218,11 +219,14 @@ label.check input { margin-top: 3px; }
 .dosis-p .explica { font-size: 13px; margin: 4px 2px 12px; }
 small.eq { color: var(--texto-suave); font-size: 12px; }
 .fuente { font-size: 11px; }
-.tabla-desliza { overflow-x: auto; margin: 0 -4px; }
-.tabla-fert { min-width: 480px; }
-.tabla-fert td, .tabla-fert th { vertical-align: middle; }
-.tabla-fert td.grado { text-align: center; white-space: nowrap; font-size: 12px; }
-.tabla-fert input.precio { width: 70px; padding: 5px 6px; text-align: right; }
+.tabla-desliza { overflow-x: auto; margin: 0 -6px; }
+/* Tabla de precios compacta: entra en el ancho de un celular sin desplazarse */
+.tabla-fert { font-size: 12px; }
+.tabla-fert td, .tabla-fert th { vertical-align: middle; padding: 4px 3px; }
+.tabla-fert th { font-size: 11px; line-height: 1.2; }
+.tabla-fert td:first-child { line-height: 1.25; }
+.tabla-fert td.grado { text-align: center; white-space: nowrap; font-size: 11px; }
+.tabla-fert input.precio { width: 50px; padding: 4px 3px; text-align: right; font-size: 13px; }
 .tabla-fert button.quitar { border: 0; background: none; color: var(--texto-suave); font-size: 16px; padding: 0 4px; cursor: pointer; }
 .opcion.mejor { border: 2px solid var(--verde); }
 .opcion-cab { display: flex; justify-content: space-between; align-items: baseline; }
@@ -232,3 +236,39 @@ small.eq { color: var(--texto-suave); font-size: 12px; }
 .opcion ul.items .prod { flex-basis: 100%; }
 .opcion ul.items .cant { font-weight: 700; }
 .opcion ul.items .costo { color: var(--texto-suave); font-size: 14px; flex: 1; }
+
+/* ===== Informe (PDF) ===== */
+.barra-informe { display: flex; gap: 8px; justify-content: space-between; }
+.nota-imprimir { margin: 6px 0 10px; }
+.informe { background: #fff; color: #111; border: 1px solid var(--borde); border-radius: var(--radio);
+  padding: 16px; font-size: 13px; line-height: 1.35; overflow-x: auto; }
+.inf-cab { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start;
+  border-bottom: 2px solid var(--verde); padding-bottom: 6px; margin-bottom: 10px; }
+.inf-cab h1 { font-size: 18px; margin: 0; color: var(--verde-osc); }
+.inf-cab p { margin: 2px 0 0; color: #444; }
+.inf-app { text-align: right; font-size: 11px; color: #555; }
+.informe h2 { font-size: 14px; margin: 14px 0 6px; color: var(--verde-osc); border-bottom: 1px solid #ddd; padding-bottom: 2px; }
+.informe h3 { font-size: 13px; margin: 10px 0 4px; }
+.informe .bloque { break-inside: avoid; page-break-inside: avoid; }
+.inf-datos { border-collapse: collapse; margin: 4px 0; }
+.inf-datos th { text-align: left; font-weight: 400; color: #555; padding: 2px 12px 2px 0; vertical-align: top; }
+.inf-datos td { padding: 2px 0; }
+.inf-tabla, .inf-pesos { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 12px; }
+.inf-tabla th, .inf-tabla td, .inf-pesos th, .inf-pesos td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; vertical-align: top; }
+.inf-tabla th { background: #f1f5f1; }
+.inf-pesos td { text-align: center; }
+.inf-pesos th { background: #f1f5f1; width: 40px; }
+.inf-pesos td.interp { color: #888; font-style: italic; }
+.inf-graf { width: 100%; height: auto; display: block; margin: 4px 0; }
+.informe .nota { font-size: 11px; color: #555; margin: 4px 0; }
+.inf-pie { margin-top: 16px; border-top: 1px solid #ddd; padding-top: 6px; font-size: 10px; color: #666; }
+
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body { background: #fff; }
+  nav.pestanas, .toast, .barra-informe, .nota-imprimir { display: none !important; }
+  section.pantalla:not(#p-informe) { display: none !important; }
+  main { padding: 0 !important; max-width: none; }
+  .informe { border: 0; padding: 0; border-radius: 0; overflow: visible; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

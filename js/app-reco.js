@@ -127,9 +127,11 @@
       html += `<p class="ayuda fuente">Dosis equivalente según Rubio et al. (2008), con arcilla, P Bray y zona. Se ajustó en Molisoles no calcáreos de la Región Pampeana (0–20 cm), incubados en laboratorio. Niveles críticos: Sucunza et al. (2018). P en grano: tablas del IPNI.</p>`;
     }
     html += `</div>`;
-    html += `<div class="botones"><button class="btn" id="ir-comb">Ver la combinación más económica</button></div>`;
+    html += `<div class="botones"><button class="btn" id="ir-comb">Ver la combinación más económica</button>
+      <button class="btn sec" data-informe-reco>Informe PDF</button></div>`;
     $("#reco-contenido").innerHTML = html;
     $("#ir-comb").onclick = () => App.irA("comb");
+    enlazarInforme();
   }
 
   // ============ FERTILIZANTES ============
@@ -229,11 +231,94 @@
         <ul class="items">${filas}</ul>
         <p class="ayuda" style="margin:4px 0 0">Aporta ${fmt(o.aporteN, 0)} kg N y ${fmt(o.aporteP, 0)} kg P por ha${sobra.length ? ` (sobran ${sobra.join(" y ")})` : ""}.</p>
       </div>`;
-    }).join("") + `<p class="ayuda">Costo solo del producto, con los precios de la pantalla Fertilizantes${fecha ? ` (${fecha.split("-").reverse().join("/")})` : ""}. "Calibrar" lleva esa dosis a la calibración de la fertilizadora.</p>`;
+    }).join("") + `<p class="ayuda">Costo solo del producto, con los precios de la pantalla Fertilizantes${fecha ? ` (${fecha.split("-").reverse().join("/")})` : ""}. "Calibrar" lleva esa dosis a la calibración de la fertilizadora.</p>
+      <div class="botones"><button class="btn sec" data-informe-reco>Informe PDF</button></div>`;
     $$("#comb-lista button[data-op]").forEach((b) => b.addEventListener("click", () => {
       const it = ops[+b.dataset.op].items[+b.dataset.item];
       App.calibrarPara(it.kg);
     }));
+    enlazarInforme();
+  }
+
+  // ============ INFORME (PDF) ============
+  function enlazarInforme() {
+    $$("[data-informe-reco]").forEach((b) => {
+      b.onclick = () => App.abrirInforme(`Informe recomendación - ${R.CULTIVOS[lote.cultivo].nombre}`, informeRecomendacion);
+    });
+  }
+
+  function informeRecomendacion(cont) {
+    const inf = App.informe;
+    const { faltan, n, p } = calcular();
+    const c = R.CULTIVOS[lote.cultivo];
+    const num = (v, dec, u) => (v === null || v === undefined ? null : `${fmt(v, dec)} ${u}`);
+    let h = inf.encabezado("Informe de recomendación de fertilización",
+      `${c.nombre}${lote.rendimiento > 0 ? ` · ${fmt(lote.rendimiento, 1)} t/ha esperadas` : ""}`);
+    h += `<section class="bloque"><h2>Datos del lote</h2>${inf.datos([
+      ["Cultivo", c.nombre],
+      ["Rendimiento esperado", num(lote.rendimiento, 1, "t/ha")],
+      lote.cultivo !== "soja" ? ["N de nitratos 0–60 cm a la siembra", num(lote.nSuelo, 0, "kg N/ha")] : null,
+      lote.cultivo !== "soja" ? ["Umbral de N (suelo + fertilizante)", num(lote.umbralN, 0, "kg N/ha")] : null,
+      ["P Bray 1 (0–20 cm)", num(lote.bray, 1, "ppm")],
+      ["Nivel crítico de P", `${fmt(lote.criticoP, 1)} ppm${lote.rotacionTrigo ? " (rotación con trigo)" : ""}`],
+      ["Arcilla (0–20 cm)", num(lote.arcilla, 1, "%")],
+      ["Densidad aparente", num(lote.densidad, 2, "g/cm³")],
+      ["Zona", lote.zona ? "Norte (al norte de la Pampa Deprimida)" : "Sur (Pampa Austral)"],
+      ["P exportado en grano", num(lote.pGrano, 2, "kg P/t")],
+    ])}${faltan.length ? `<div class="aviso">Faltan datos: ${faltan.join(", ")}.</div>` : ""}</section>`;
+
+    h += `<section class="bloque"><h2>Nitrógeno</h2>`;
+    if (lote.cultivo === "soja") h += `<p>En soja no se calcula dosis de N.</p>`;
+    else if (n !== null) h += inf.datos([["Dosis de N", `<b>${fmt(n, 0)} kg N/ha</b>`],
+      ["Cálculo", `umbral ${fmt(lote.umbralN, 0)} − N del suelo ${fmt(lote.nSuelo, 0)} kg N/ha`]]);
+    h += `</section>`;
+
+    if (p) {
+      const fila = (nombre, v, explica) => `<tr><td>${nombre}</td><td><b>${fmt(v, 0)}</b></td><td>${fmt(v * R.P_A_P2O5, 0)}</td><td>${explica}</td></tr>`;
+      h += `<section class="bloque"><h2>Fósforo</h2>
+        <p>Dosis equivalente: <b>${fmt(p.porPpm, 1)} kg de P/ha</b> para subir 1 ppm el P Bray (coeficiente b = ${fmt(p.b, 3)}).</p>
+        <table class="inf-tabla"><tr><th>Dosis</th><th>kg P/ha</th><th>kg P₂O₅/ha</th><th></th></tr>
+          ${fila("Suficiencia", p.suficiencia, p.deficit > 0 ? "Lleva el P del suelo al nivel crítico para el cultivo de esta campaña." : "El P del suelo ya está en el nivel crítico o por encima.")}
+          ${fila("Construcción y mantenimiento", p.construccion, `Además repone el P que exporta la cosecha (${fmt(p.exportacion, 0)} kg P/ha), para que el suelo siga en el nivel crítico la campaña siguiente.`)}
+        </table>
+        ${R.avisosRubio({ bray: lote.bray, arcilla: lote.arcilla }).map((a) => `<p class="nota">${a}</p>`).join("")}</section>`;
+
+      // Combinación más económica para cada dosis de P.
+      const fecha = leer(CLAVE_FECHA, "");
+      h += `<section class="bloque"><h2>Combinación de fertilizantes más económica</h2>`;
+      for (const [nombre, pReq] of [["Para la dosis de suficiencia", p.suficiencia], ["Para la dosis de construcción y mantenimiento", p.construccion]]) {
+        const ops = (n || 0) > 0 || pReq > 0 ? R.combinaciones(catalogo, n || 0, pReq, 3) : [];
+        h += `<h3>${nombre} (${fmt(n || 0, 0)} kg N y ${fmt(pReq, 0)} kg P por ha)</h3>`;
+        if (!ops.length) { h += `<p class="nota">No hace falta fertilizar o no hay precios cargados.</p>`; continue; }
+        h += `<table class="inf-tabla"><tr><th></th><th>Productos (kg/ha)</th><th>U$S/ha</th></tr>${ops.map((o, i) =>
+          `<tr><td>${i === 0 ? "<b>Más económica</b>" : `Alternativa ${i}`}</td><td>${o.items.map((it) => `${App.informe.esc(it.f.nombre)}: ${fmt(it.kg, 0)}`).join("<br>")}</td>
+           <td>${i === 0 ? "<b>" : ""}${fmt(o.costo, 1)}${i === 0 ? "</b>" : ""}</td></tr>`).join("")}</table>`;
+      }
+      h += `<p class="nota">Costo solo del producto${fecha ? `, con precios del ${fecha.split("-").reverse().join("/")}` : ""}.</p></section>`;
+    }
+
+    // Precios y costos por nutriente.
+    const costos = R.costosPorNutriente(catalogo).porFertilizante;
+    const conPrecio = catalogo.filter((f) => f.precio > 0);
+    const u = (v) => (v === null || v === undefined ? "—" : fmt(v, 2));
+    h += `<section class="bloque"><h2>Precios y costo por unidad de nutriente</h2>
+      <table class="inf-tabla"><tr><th>Fertilizante</th><th>Grado (N-P-K-S)</th><th>Grado equivalente (N-P₂O₅-K₂O-S)</th><th>U$S/t</th><th>U$S/kg N</th><th>U$S/kg P</th><th>U$S/kg P₂O₅</th></tr>
+      ${conPrecio.map((f) => {
+        const g = R.gradoEquivalente(f), cc = costos[f.id];
+        return `<tr><td>${App.informe.esc(f.nombre)}</td><td>${[f.n, f.p, f.k, f.s].map((v) => fmt(v || 0, 1)).join("-")}</td>
+          <td>${[g.n, g.p2o5, g.k2o, g.s].map((v) => fmt(v, 0)).join("-")}</td><td>${fmt(f.precio, 0)}</td>
+          <td>${u(cc.n)}</td><td>${u(cc.p)}</td><td>${u(cc.p2o5)}</td></tr>`;
+      }).join("")}</table>
+      <p class="nota">En los compuestos, el precio se reparte entre N y P según lo que costaría cada nutriente en el fertilizante simple más barato.</p></section>`;
+
+    h += `<section class="bloque"><h2>Fuentes</h2><ul class="nota">
+      <li>N: método del umbral (N de nitratos 0–60 cm a la siembra + N del fertilizante).</li>
+      <li>Dosis equivalente de P: Rubio, G., Cabello, M.J., Gutiérrez Boem, F.H., Munaro, E. 2008. Estimating available soil phosphorus increases after phosphorus additions in Mollisols. Soil Sci. Soc. Am. J. 72:1721–1727 (modelo con arcilla, P Bray y zona).</li>
+      <li>Niveles críticos de P Bray: Sucunza, F.A., Gutiérrez Boem, F.H., García, F.O., Boxler, M., Rubio, G. 2018. Long-term phosphorus fertilization of wheat, soybean and maize on Mollisols. Eur. J. Agron. 96:87–95.</li>
+      <li>P exportado en grano: tablas de requerimientos e índices de cosecha del IPNI.</li>
+    </ul></section>`;
+    h += inf.pie();
+    cont.innerHTML = h;
   }
 
   App.registrar("lote", dibujarLote);

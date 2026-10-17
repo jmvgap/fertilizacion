@@ -76,6 +76,7 @@
         <button class="btn sec" id="btn-ejemplo">Cargar ejemplo</button>
         <button class="btn sec" id="btn-exportar">Exportar CSV</button>
         <button class="btn sec" id="btn-importar">Importar CSV</button>
+        <button class="btn sec" data-informe="distribucion">Informe PDF</button>
         <input type="file" id="archivo-csv" accept=".csv,text/csv,text/plain" hidden>
       </div>
       <ul class="lista-ensayos" id="lista-ensayos"></ul>
@@ -174,6 +175,16 @@
     <div id="comb-lista"></div>
   </section>
 
+  <!-- ============ INFORME ============ -->
+  <section class="pantalla" id="p-informe">
+    <div class="barra-informe">
+      <button class="btn sec" id="inf-volver">Volver</button>
+      <button class="btn" id="inf-imprimir">Guardar como PDF</button>
+    </div>
+    <p class="ayuda nota-imprimir">Se abre el diálogo de impresión: elegí <b>Guardar como PDF</b> como impresora.</p>
+    <div class="informe" id="informe"></div>
+  </section>
+
   <!-- ============ ACERCA DE ============ -->
   <section class="pantalla" id="p-acerca">
     <div class="tarjeta acerca">
@@ -255,7 +266,8 @@
       <label style="display:block;margin-top:8px;font-size:14px">
         <input type="checkbox" id="ver-mitades"> Mostrar también las mitades del alternado
       </label>
-      <div class="botones"><button class="btn sec" id="btn-ir-pasadas">Ver las pasadas con este ancho</button></div>
+      <div class="botones"><button class="btn sec" id="btn-ir-pasadas">Ver las pasadas con este ancho</button>
+        <button class="btn sec" data-informe="distribucion">Informe PDF</button></div>
     </div>
     <details class="tarjeta"><summary>Tabla de valores</summary><div id="tabla-cv"></div></details>
   </section>

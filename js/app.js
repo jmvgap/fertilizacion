@@ -106,7 +106,7 @@
   }
 
   // ---------- Navegación ----------
-  const VERSION = "3.0.0";
+  const VERSION = "3.1.0";
   let pantallaAnterior = "ensayo";
   $("#version-app").textContent = VERSION;
   $$("[data-acerca]").forEach((b) => { b.onclick = () => { if (pantalla !== "acerca") pantallaAnterior = pantalla; irA("acerca"); }; });
@@ -592,9 +592,135 @@
   }, 300));
   window.addEventListener("resize", () => { clearTimeout(dibujar.h); dibujar.h = setTimeout(dibujar, 150); });
 
+  // ============ INFORME (PDF) ============
+  // El informe se arma como una pantalla más y se pasa a PDF con el diálogo
+  // de impresión del sistema ("Guardar como PDF"). Los gráficos se dibujan con
+  // un ancho fijo pensado para una hoja A4.
+  const ANCHO_INFORME = 680;
+  let informeTitulo = "", pantallaAntesInforme = "ensayo";
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const informe = {
+    ANCHO: ANCHO_INFORME, esc,
+    encabezado(titulo, subtitulo) {
+      return `<header class="inf-cab"><div><h1>${titulo}</h1>${subtitulo ? `<p>${esc(subtitulo)}</p>` : ""}</div>
+        <div class="inf-app">Calculadora de Fertilización<br><small>jmvgap.github.io/fertilizacion</small></div></header>`;
+    },
+    // filas: [[etiqueta, valor HTML], ...]; las filas sin valor no se muestran.
+    datos(filas) {
+      return `<table class="inf-datos">${filas.filter((f) => f && f[1] !== null && f[1] !== undefined && f[1] !== "")
+        .map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("")}</table>`;
+    },
+    pie() {
+      return `<footer class="inf-pie">Generado el ${new Date().toLocaleDateString("es-AR")} con la Calculadora de Fertilización ${VERSION}
+        · Ing. Agr. Juan Manuel Vázquez (Dto. de Tecnología, UNLu · FCAyF, UNLP) · Software libre, licencia GPL-3.</footer>`;
+    },
+  };
+  function abrirInforme(titulo, construir) {
+    informeTitulo = titulo.replace(/[\\/:*?"<>|]+/g, "-");
+    if (pantalla !== "informe") pantallaAntesInforme = pantalla;
+    irA("informe");
+    construir($("#informe"));
+  }
+  $("#inf-volver").onclick = () => irA(pantallaAntesInforme);
+  $("#inf-imprimir").onclick = () => {
+    // El título de la página se usa como nombre sugerido del PDF.
+    const anterior = document.title;
+    document.title = informeTitulo;
+    window.print();
+    setTimeout(() => { document.title = anterior; }, 1500);
+  };
+
+  const claseTextoCV = (cv) => ({ bien: "cv-bueno", medio: "cv-medio", mal: "cv-malo" }[claseCV(cv)]);
+
+  function informeDistribucion(cont) {
+    const r = datosParaCalculo();
+    const [bueno, aceptable] = limitesCV();
+    const fecha = ensayo.fecha ? ensayo.fecha.split("-").reverse().join("/") : "";
+    let h = informe.encabezado("Informe de distribución transversal", [ensayo.nombre, fecha].filter(Boolean).join(" · "));
+    h += `<section class="bloque"><h2>Datos del ensayo</h2>${informe.datos([
+      ["Máquina", esc(ensayo.maquina)],
+      ["Fertilizante", esc(ensayo.fertilizante)],
+      ["Cajas", `${ensayo.nCajas} cajas cada ${fmt(ensayo.dCentros, 2)} m (de centro a centro); cubren ${fmt(ensayo.nCajas * ensayo.dCentros, 1)} m`],
+      ["Boca de caja", ensayo.bocaAncho > 0 && ensayo.bocaLargo > 0 ? `${fmt(ensayo.bocaAncho, 1)} × ${fmt(ensayo.bocaLargo, 1)} cm` : null],
+      ["Escala de CV", `<span class="cv-bueno">verde</span> hasta ${fmt(bueno, 0)} %, <span class="cv-medio">amarillo</span> hasta ${fmt(aceptable, 0)} %, <span class="cv-malo">rojo</span> por encima`],
+    ])}</section>`;
+    if (!r.ok) { cont.innerHTML = h + `<div class="aviso error">${r.mensaje}</div>` + informe.pie(); return; }
+
+    // Pesos por caja, en tablas de hasta 16 cajas por renglón.
+    const pos = Motor.posiciones(ensayo.nCajas, ensayo.dCentros);
+    let tablas = "";
+    for (let i0 = 0; i0 < ensayo.nCajas; i0 += 16) {
+      const idx = [...Array(Math.min(16, ensayo.nCajas - i0)).keys()].map((k) => k + i0);
+      tablas += `<table class="inf-pesos"><tr><th>Caja</th>${idx.map((i) => `<td>${i + 1}</td>`).join("")}</tr>
+        <tr><th>m</th>${idx.map((i) => `<td>${fmt(pos[i], 1)}</td>`).join("")}</tr>
+        <tr><th>g</th>${idx.map((i) => `<td${r.interpoladas[i] ? ' class="interp"' : ""}>${fmt(r.valores[i], 2)}</td>`).join("")}</tr></table>`;
+    }
+    const corte = avisoPerfilCortado(r);
+    h += `<section class="bloque"><h2>Perfil de una pasada</h2><svg class="inf-graf" id="inf-perfil"></svg>${tablas}
+      ${r.interpoladas.some(Boolean) ? `<p class="nota">En gris, cajas sin dato interpoladas entre sus vecinas.</p>` : ""}
+      ${corte ? `<p class="nota">${corte}</p>` : ""}</section>`;
+
+    // Superposición con el ancho elegido.
+    const alt = ensayo.modo === "alternado";
+    const s = Motor.superponer(r.valores, ensayo.dCentros, ensayo.ancho, alt);
+    const g = Motor.graficoPasadas(r.valores, ensayo.dCentros, ensayo.ancho, alt);
+    const paso = s.xs.length > 1 ? s.xs[1] - s.xs[0] : ensayo.ancho;
+    const kh = kgHa(s.media);
+    h += `<section class="bloque"><h2>Superposición con ${fmt(ensayo.ancho, 1)} m de ancho de trabajo (${ensayo.modo})</h2>
+      <svg class="inf-graf" id="inf-pasadas"></svg>
+      <p class="nota"><span style="color:var(--p-izq)">■</span> pasada izquierda · <span style="color:var(--p-cen)">■</span> central ·
+        <span style="color:var(--p-der)">■</span> derecha · <span style="color:var(--p-suma)">■</span> suma de todas las pasadas ·
+        sombreado: ciclo evaluado · línea de trazos: media</p>
+      ${informe.datos([
+        ["CV (ciclo completo)", `<b class="${claseTextoCV(s.cv)}">${fmt(s.cv, 1)} %</b>`],
+        ["Dosis media", kh !== null ? `${fmt(kh, 0)} kg/ha` : `${fmt(s.media, 2)} g por caja`],
+        alt ? ["CV por mitades (complementario)", `izquierda ${fmt(s.mitades[0].cv, 1)} %, derecha ${fmt(s.mitades[1].cv, 1)} %`] : null,
+      ])}</section>`;
+
+    // Curva de CV.
+    const pasoCurva = ensayo.wPaso > 0 ? ensayo.wPaso : 1;
+    const cCont = Motor.curvaCV(r.valores, ensayo.dCentros, anchoMin(), anchoMax(), pasoCurva, false);
+    const cAlt = Motor.curvaCV(r.valores, ensayo.dCentros, anchoMin(), anchoMax(), pasoCurva, true);
+    const rangos = (curva, lim) => {
+      const rs = Motor.rangosAceptables(curva, lim);
+      return rs.length ? rs.map((x) => (x.desde === curva[0].w ? `hasta ${fmt(x.hasta, 1)} m` : `${fmt(x.desde, 1)} a ${fmt(x.hasta, 1)} m`)).join("; ") : "ninguno";
+    };
+    h += `<section class="bloque"><h2>CV según el ancho de trabajo</h2><svg class="inf-graf" id="inf-cv"></svg>
+      <p class="nota"><span style="color:#6a1b9a">━</span> continuo · <span style="color:#ef6c00">━</span> alternado · línea vertical: ancho elegido</p>
+      <table class="inf-tabla"><tr><th></th><th>Continuo</th><th>Alternado</th></tr>
+        <tr><td class="cv-bueno">Anchos con CV ≤ ${fmt(bueno, 0)} %</td><td>${rangos(cCont, bueno)}</td><td>${rangos(cAlt, bueno)}</td></tr>
+        <tr><td class="cv-medio">Anchos con CV ≤ ${fmt(aceptable, 0)} %</td><td>${rangos(cCont, aceptable)}</td><td>${rangos(cAlt, aceptable)}</td></tr>
+      </table></section>`;
+
+    // Calibración, si se cargó.
+    const anchoCal = cal.ancho > 0 ? cal.ancho : ensayo.ancho;
+    if ((cal.kgMin > 0 && cal.vel > 0) || (cal.objetivo > 0 && cal.vel > 0)) {
+      h += `<section class="bloque"><h2>Calibración</h2>${informe.datos([
+        ["Caudal", cal.kgMin > 0 ? `${fmt(cal.kgMin, 2)} kg/min` : null],
+        ["Velocidad", cal.vel > 0 ? `${fmt(cal.vel, 1)} km/h` : null],
+        ["Ancho de trabajo", `${fmt(anchoCal, 1)} m`],
+        ["Dosis aplicada", cal.kgMin > 0 && cal.vel > 0 ? `<b>${fmt(Motor.kgHaDesdeCaudal(cal.kgMin, cal.vel, anchoCal), 0)} kg/ha</b>` : null],
+        ["Dosis deseada", cal.objetivo > 0 ? `${fmt(cal.objetivo, 0)} kg/ha → caudal a regular <b>${fmt(Motor.caudalParaDosis(cal.objetivo, cal.vel, anchoCal), 2)} kg/min</b>` : null],
+      ])}</section>`;
+    }
+    h += informe.pie();
+    cont.innerHTML = h;
+
+    Graficos.perfil($("#inf-perfil"), { valores: r.valores, interpoladas: r.interpoladas, d: ensayo.dCentros, alto: 160, anchoFijo: ANCHO_INFORME });
+    Graficos.pasadas($("#inf-pasadas"), { ...g, d: ensayo.dCentros, w: ensayo.ancho, media: s.media, etqY: "g",
+      alto: 210, anchoFijo: ANCHO_INFORME, ciclo: [s.xs[0] - paso / 2, s.xs[s.xs.length - 1] + paso / 2] });
+    Graficos.curvaCV($("#inf-cv"), {
+      series: [{ nombre: "Continuo", color: "#6a1b9a", puntos: cCont }, { nombre: "Alternado", color: "#ef6c00", puntos: cAlt }],
+      limites: [bueno, aceptable], wActual: ensayo.ancho, alto: 210, anchoFijo: ANCHO_INFORME,
+    });
+  }
+  $$('[data-informe="distribucion"]').forEach((b) => {
+    b.onclick = () => abrirInforme(`Informe distribución - ${ensayo.nombre || "ensayo"}`, informeDistribucion);
+  });
+
   // Funciones compartidas con los otros módulos.
   window.App = {
-    irA, toast, leer, escribir, mostrarValor, aviso, fmt,
+    irA, toast, leer, escribir, mostrarValor, aviso, fmt, abrirInforme, informe,
     registrar(p, fn) { otrasPantallas[p] = fn; },
     // Lleva una dosis de producto (kg/ha) a la calibración de la fertilizadora.
     calibrarPara(kgHa) {
