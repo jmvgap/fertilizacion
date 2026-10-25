@@ -1,9 +1,15 @@
 name: Compilar app Android (APK y AAB)
 
-# Se ejecuta a mano desde la pestaña Actions ("Run workflow"), cuando se
-# quiere sacar una versión nueva para Google Play.
+# Se ejecuta a mano desde la pestaña Actions ("Run workflow") cuando se quiere
+# sacar una versión nueva para Google Play, y solo cuando cambia el proyecto
+# Android (para verificar que compila).
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
 
 jobs:
   build:
