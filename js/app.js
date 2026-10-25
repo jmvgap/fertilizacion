@@ -7,6 +7,9 @@
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const fmt = Graficos.fmt;
+  // Dentro de la app de Android hay un "puente" (AndroidApp) para imprimir a
+  // PDF y guardar archivos, que en un WebView no funcionan solos.
+  const Nativo = window.AndroidApp || null;
 
   // ---------- Almacenamiento local (puede no estar disponible) ----------
   const CLAVE_ACTUAL = "ferticalc.actual";
@@ -269,10 +272,13 @@
     lineas.push("caja;posicion_m;peso_g");
     const pos = Motor.posiciones(ensayo.nCajas, ensayo.dCentros);
     ensayo.valores.forEach((v, i) => lineas.push(`${i + 1};${num(pos[i])};${num(v)}`));
-    const blob = new Blob(["﻿" + lineas.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const nombre = `ferticalc_${(ensayo.nombre || "ensayo").replace(/[^\w\-]+/g, "_")}.csv`;
+    const texto = "\ufeff" + lineas.join("\r\n");
+    if (Nativo) { Nativo.guardarArchivo(nombre, texto, "text/csv"); return; }
+    const blob = new Blob([texto], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `ferticalc_${(ensayo.nombre || "ensayo").replace(/[^\w\-]+/g, "_")}.csv`;
+    a.download = nombre;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
@@ -590,7 +596,7 @@
     }
     $("#instalar-ayuda").innerHTML = `<div class="aviso" style="margin-top:10px">${ayuda}</div>`;
   };
-  mostrarTarjetaInstalar();
+  if (Nativo) $("#tarjeta-instalar").remove(); else mostrarTarjetaInstalar();
 
   // ---------- Inicio ----------
   // El alto de la barra de pestañas define cuánto lugar queda para las
@@ -649,7 +655,7 @@
     // El título de la página se usa como nombre sugerido del PDF.
     const anterior = document.title;
     document.title = informeTitulo;
-    window.print();
+    if (Nativo) Nativo.imprimir(informeTitulo); else window.print();
     setTimeout(() => { document.title = anterior; }, 1500);
   };
 
@@ -753,7 +759,15 @@
     else irA(Motor.hayDatos(ensayo.valores) ? "pasadas" : "ensayo");
   });
 
-  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  // Botón "atrás" de Android: vuelve de Informe, Ayuda y Acerca de; en las
+  // demás pantallas devuelve false y la app se cierra.
+  window.atrasApp = () => {
+    if (pantalla === "informe") { irA(pantallaAntesInforme); return true; }
+    if (pantalla === "ayuda" || pantalla === "acerca") { irA(pantallaAnterior); return true; }
+    return false;
+  };
+
+  if (!Nativo && "serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
 })();

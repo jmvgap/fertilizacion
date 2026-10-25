@@ -185,7 +185,11 @@
   $("#btn-actualizar-precios").onclick = async () => {
     let datos;
     try {
-      const r = await fetch("precios.json", { cache: "no-cache" });
+      // En la web se lee el archivo del mismo sitio; dentro de la app de
+      // Android, el publicado en GitHub (el que viene adentro puede ser viejo).
+      const url = location.hostname.endsWith("github.io") || location.hostname === "localhost"
+        ? "precios.json" : "https://jmvgap.github.io/fertilizacion/precios.json";
+      const r = await fetch(url, { cache: "no-cache" });
       if (!r.ok) throw new Error(r.status);
       datos = await r.json();
     } catch {

@@ -1,0 +1,62 @@
+plugins {
+    id 'com.android.application'
+}
+
+// La firma y los números de versión llegan desde GitHub Actions.
+def ksFile = System.getenv("KEYSTORE_FILE")
+def hasSigning = ksFile != null && !ksFile.isEmpty() && file(ksFile).exists()
+def buildNumber = Integer.parseInt(System.getenv("VERSION_CODE") ?: "1")
+def webVersion = System.getenv("VERSION_NAME") ?: "0.0.0"
+
+android {
+    namespace 'io.github.jmvgap.fertilizacion'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "io.github.jmvgap.fertilizacion"
+        minSdk 26
+        targetSdk 36
+        versionCode buildNumber
+        versionName "${webVersion} (${buildNumber})"
+    }
+
+    signingConfigs {
+        release {
+            if (hasSigning) {
+                storeFile file(ksFile)
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (hasSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// Igual que en el pasturómetro: alinea kotlin-stdlib para evitar clases duplicadas.
+configurations.all {
+    resolutionStrategy {
+        force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+    implementation 'androidx.activity:activity:1.9.3'
+    implementation 'androidx.core:core:1.13.1'
+}
