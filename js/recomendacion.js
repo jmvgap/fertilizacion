@@ -56,8 +56,8 @@ const Recomendacion = (() => {
   // Avisos cuando los datos salen del rango en que se ajustó el modelo de Rubio.
   function avisosRubio({ bray, arcilla }) {
     const av = [];
-    if (bray < 2.4 || bray > 35.6) av.push(`El P Bray (${bray} ppm) está fuera del rango de los suelos del trabajo (2,4 a 35,6 ppm).`);
-    if (arcilla < 8.7 || arcilla > 37.6) av.push(`La arcilla (${arcilla} %) está fuera del rango de los suelos del trabajo (8,7 a 37,6 %).`);
+    if (bray < 2.4 || bray > 35.6) av.push(`El P Bray (${String(bray).replace(".", ",")} ppm) está fuera del rango de los suelos del trabajo (2,4 a 35,6 ppm).`);
+    if (arcilla < 8.7 || arcilla > 37.6) av.push(`La arcilla (${String(arcilla).replace(".", ",")} %) está fuera del rango de los suelos del trabajo (8,7 a 37,6 %).`);
     return av;
   }
 

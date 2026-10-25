@@ -19,10 +19,6 @@
       <button class="btn-info" data-ayuda aria-label="Ayuda">?</button>
       <button class="btn-info" data-acerca aria-label="Acerca de">i</button>
     </div>
-    <div class="segmentado selector-modulo">
-      <button data-ir-modulo="distribucion">Distribución</button>
-      <button data-ir-modulo="recomendacion">Recomendación y costos</button>
-    </div>
     <div class="tarjeta instalar" id="tarjeta-instalar" hidden>
       <h2>Instalar en el celular</h2>
       <p class="ayuda">Queda con su ícono y funciona sin señal en el campo.</p>
@@ -81,24 +77,21 @@
       <button class="btn-info" data-ayuda aria-label="Ayuda">?</button>
       <button class="btn-info" data-acerca aria-label="Acerca de">i</button>
     </div>
-    <div class="segmentado selector-modulo">
-      <button data-ir-modulo="distribucion">Distribución</button>
-      <button data-ir-modulo="recomendacion">Recomendación y costos</button>
-    </div>
     <div class="tarjeta">
-      <h2>Cultivo</h2>
-      <div class="segmentado" id="cultivo-sel">
-        <button data-cultivo="maiz">Maíz</button>
-        <button data-cultivo="soja">Soja</button>
-        <button data-cultivo="trigo">Trigo</button>
+      <div class="fila fila-centro">
+        <div class="segmentado" id="cultivo-sel" style="flex:2">
+          <button data-cultivo="maiz">Maíz</button>
+          <button data-cultivo="soja">Soja</button>
+          <button data-cultivo="trigo">Trigo</button>
+        </div>
+        <label class="campo"><span>Rendimiento (t/ha)</span><input type="text" inputmode="decimal" data-lote="rendimiento"></label>
       </div>
-      <label class="campo" style="margin-top:10px"><span>Rendimiento esperado (t/ha)</span><input type="text" inputmode="decimal" data-lote="rendimiento"></label>
     </div>
     <div class="tarjeta" id="tarjeta-n">
       <h2>Nitrógeno</h2>
       <div class="fila">
-        <label class="campo"><span>N de nitratos 0–60 cm a la siembra (kg N/ha)</span><input type="text" inputmode="decimal" data-lote="nSuelo"></label>
-        <label class="campo"><span>Umbral de N: suelo + fertilizante (kg N/ha)</span><input type="text" inputmode="decimal" data-lote="umbralN"></label>
+        <label class="campo"><span>Nitratos 0–60 cm a la siembra (kg N/ha)</span><input type="text" inputmode="decimal" data-lote="nSuelo"></label>
+        <label class="campo"><span>Umbral: suelo + fertilizante (kg N/ha)</span><input type="text" inputmode="decimal" data-lote="umbralN"></label>
       </div>
     </div>
     <div class="tarjeta">
@@ -107,19 +100,18 @@
         <label class="campo"><span>P Bray 1, 0–20 cm (ppm)</span><input type="text" inputmode="decimal" data-lote="bray"></label>
         <label class="campo"><span>Nivel crítico (ppm)</span><input type="text" inputmode="decimal" data-lote="criticoP"></label>
       </div>
-      <label class="check"><input type="checkbox" id="rotacion-trigo"> La rotación incluye trigo: usar 19 ppm para todos los cultivos</label>
+      <label class="check"><input type="checkbox" id="rotacion-trigo"> Rotación con trigo (crítico de 19 ppm para todos)</label>
       <div class="fila">
-        <label class="campo"><span>Arcilla, 0–20 cm (%)</span><input type="text" inputmode="decimal" data-lote="arcilla"></label>
-        <label class="campo"><span>Densidad aparente (g/cm³)</span><input type="text" inputmode="decimal" data-lote="densidad"></label>
+        <label class="campo"><span>Arcilla (%)</span><input type="text" inputmode="decimal" data-lote="arcilla"></label>
+        <label class="campo"><span>Dens. aparente (g/cm³)</span><input type="text" inputmode="decimal" data-lote="densidad"></label>
+        <label class="campo"><span>P en grano (kg P/t)</span><input type="text" inputmode="decimal" data-lote="pGrano"></label>
       </div>
-      <span class="etq-campo">Ubicación del lote</span>
+      <span class="etq-campo">Ubicación del lote (para la dosis equivalente de P)</span>
       <div class="segmentado" id="zona-sel">
         <button data-zona="1">Norte</button>
         <button data-zona="0">Sur</button>
       </div>
-      <p class="ayuda">La divisoria es la Pampa Deprimida (cuenca del Salado). <b>Norte:</b> Pampa Ondulada y Pampa Llana. <b>Sur:</b> Pampa Austral (sudeste y sudoeste bonaerense).</p>
-      <label class="campo" style="margin-top:8px"><span>P exportado por tonelada de grano (kg P/t)</span><input type="text" inputmode="decimal" data-lote="pGrano"></label>
-      <p class="ayuda">Valores por defecto: niveles críticos de Sucunza et al. (2018) y P en grano de las tablas del IPNI. Todos se pueden cambiar.</p>
+      <p class="ayuda">Respecto de la Pampa Deprimida (cuenca del Salado). <b>Norte:</b> Pampa Ondulada y Llana. <b>Sur:</b> Pampa Austral.</p>
     </div>
   </section>
 
@@ -131,11 +123,15 @@
   <!-- ============ RECOMENDACIÓN: FERTILIZANTES ============ -->
   <section class="pantalla" id="p-fert">
     <div class="tarjeta">
-      <h2>Fertilizantes y precios</h2>
-      <p class="ayuda">Grado en elemento (N-P-K-S) y, debajo, grado equivalente en óxidos (N-P₂O₅-K₂O-S), como en la bolsa. Precio en U$S por tonelada.</p>
-      <label class="campo" style="max-width:220px"><span>Fecha de los precios</span><input type="date" id="fecha-precios"></label>
+      <div class="cab-fert">
+        <h2>Precios (U$S/t)</h2>
+        <label class="fecha-chica"><span>al</span><input type="date" id="fecha-precios"></label>
+      </div>
       <div class="tabla-desliza"><table class="tabla tabla-fert" id="tabla-fert"></table></div>
-      <p class="ayuda">Debajo del costo por kg de P figura el costo por kg de P₂O₅, para comparar con las publicaciones que lo expresan así. En los compuestos (DAP, MAP) el precio se reparte entre N y P según lo que costaría cada uno en el fertilizante simple más barato.</p>
+      <p class="ayuda">Grado en elemento y, debajo, en óxidos. Costo de P: debajo, por kg de P₂O₅. En DAP y MAP el precio se reparte entre N y P.</p>
+      <div class="botones"><button class="btn chico" id="btn-actualizar-precios">Actualizar precios</button>
+        <button class="btn sec chico" id="btn-editar-lista">Editar lista</button>
+        <button class="btn sec chico" id="btn-restaurar-fert">Lista original</button></div>
     </div>
     <details class="tarjeta" id="agregar-fert">
       <summary>Agregar un fertilizante</summary>
@@ -150,9 +146,6 @@
       <label class="campo" style="max-width:220px"><span>Precio (U$S/t)</span><input type="text" inputmode="numeric" id="nf-precio"></label>
       <div class="botones"><button class="btn" id="nf-agregar">Agregar</button></div>
     </details>
-    <div class="botones"><button class="btn" id="btn-actualizar-precios">Actualizar precios</button>
-      <button class="btn sec" id="btn-editar-lista">Editar lista</button>
-      <button class="btn sec" id="btn-restaurar-fert">Volver a la lista original</button></div>
   </section>
 
   <!-- ============ RECOMENDACIÓN: COMBINACIÓN ============ -->
@@ -201,7 +194,7 @@
           <li><b>Lote:</b> elegí el cultivo y cargá el rendimiento esperado, los nitratos de 0–60 cm a la siembra, el P Bray, la arcilla, la densidad aparente y la zona (norte o sur de la Pampa Deprimida).</li>
           <li><b>Dosis N y P:</b> muestra la dosis de N y las dos dosis de P: <b>suficiencia</b> (lleva el P al nivel crítico para esta campaña) y <b>construcción y mantenimiento</b> (además repone lo que se lleva la cosecha).</li>
           <li><b>Fertilizantes:</b> con "Actualizar precios" se descargan los últimos precios publicados; también podés cargarlos a mano en U$S por tonelada. Con "Editar lista" podés quitar productos; también podés agregar otros.</li>
-          <li><b>Más económica:</b> la combinación de fertilizantes más barata que cubre la dosis. "Calibrar" lleva la dosis del producto a la calibración del módulo Distribución.</li>
+          <li><b>Más económica:</b> la combinación de fertilizantes más barata que cubre la dosis.</li>
         </ol>
       </details>
       <details>
@@ -257,6 +250,7 @@
 
   <!-- ============ CAJAS (perfil único) ============ -->
   <section class="pantalla llena" id="p-cajas">
+    <div class="girar-aviso">↻ Girá el celular para ver mejor esta pantalla</div>
     <div class="cabecera-cajas">
       <b>Peso por caja (g)</b>
       <span class="ayuda">← deslizá de costado →</span>
@@ -269,6 +263,7 @@
 
   <!-- ============ PASADAS ============ -->
   <section class="pantalla llena" id="p-pasadas">
+    <div class="girar-aviso">↻ Girá el celular para ver mejor esta pantalla</div>
     <div class="controles-pasadas">
       <div class="segmentado" id="modo-pasadas">
         <button data-modo="continuo">Continuo</button>

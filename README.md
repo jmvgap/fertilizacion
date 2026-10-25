@@ -18,7 +18,7 @@ Web app instalable en el celular que funciona sin conexión. El módulo **Distri
   - P con dos dosis: **suficiencia** (lleva el P al nivel crítico para esta campaña) y **construcción y mantenimiento** (además repone lo que exporta la cosecha).
   - Todo en kg de elemento, con el equivalente en P₂O₅.
 - **Fertilizantes:** catálogo compartido con grado y grado equivalente, precios en U$S/t guardados con su fecha (el botón "Actualizar precios" descarga los de [`precios.json`](precios.json), que se edita desde GitHub), y costo por kg de N, de P y de P₂O₅.
-- **Más económica:** prueba todas las combinaciones de uno o dos productos y ordena por costo. "Calibrar" lleva la dosis del producto a la calibración del módulo Distribución.
+- **Más económica:** prueba todas las combinaciones de uno o dos productos y ordena por costo.
 
 ## Cómo calcula
 - En cada punto suma **todas** las pasadas que lo alcanzan, no solo las vecinas, así que vale para cualquier ancho de trabajo.

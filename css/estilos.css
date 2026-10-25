@@ -283,5 +283,38 @@ small.eq { color: var(--texto-suave); font-size: 12px; }
 .ayuda-texto h3 { margin: 10px 0 4px; }
 
 /* Botón para cambiar de módulo, al principio de cada barra de pestañas */
-nav.pestanas button.cambiar-modulo { flex: 0.8; color: var(--verde-osc); border-right: 1px solid var(--borde); background: var(--verde-claro); }
+nav.pestanas button.cambiar-modulo { flex: 0.8; color: var(--texto-suave); border-right: 1px solid var(--borde); background: #eef0ee; }
 nav.pestanas button.cambiar-modulo .flecha { font-size: 20px; line-height: 24px; font-weight: 700; }
+
+/* Pestaña seleccionada: fondo y franja de color */
+nav.pestanas button.activa { background: var(--verde-claro); color: var(--verde-osc); box-shadow: inset 0 3px 0 var(--verde); }
+
+/* Aviso para girar el celular (solo en vertical, en Cajas y Pasadas) */
+.girar-aviso { display: none; align-items: center; justify-content: center; gap: 6px;
+  background: #fff7e0; border: 1px solid #f0d58a; color: var(--aviso); border-radius: 8px;
+  padding: 5px 8px; font-size: 13px; }
+@media (orientation: portrait) { .girar-aviso { display: flex; } }
+
+/* Lote y Fertilizantes más compactas, para que entren sin desplazarse */
+#p-lote .tarjeta, #p-fert .tarjeta { padding: 8px 10px; margin-bottom: 8px; }
+#p-lote .tarjeta h2, #p-fert .tarjeta h2 { font-size: 15px; margin: 0 0 6px; }
+#p-lote label.campo { margin-bottom: 6px; }
+#p-lote label.campo > span { font-size: 12px; line-height: 1.2; margin-bottom: 2px; }
+#p-lote input[type=text] { padding: 6px 8px; }
+#p-lote .fila { gap: 8px; align-items: flex-end; }
+#p-lote .fila-centro { align-items: flex-end; }
+#p-lote .fila-centro .segmentado { margin-bottom: 6px; }
+#p-lote .segmentado button { padding: 6px; }
+#p-lote label.check { font-size: 13px; margin: 0 0 6px; }
+#p-lote .ayuda { font-size: 12px; margin: 3px 0 0; }
+#p-lote .titulo-app, #p-ensayo .titulo-app { margin-bottom: 8px; }
+.cab-fert { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cab-fert h2 { margin: 0 !important; }
+.fecha-chica { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--texto-suave); }
+.fecha-chica input { padding: 4px 6px; font-size: 13px; width: auto; }
+#p-fert .ayuda { font-size: 12px; margin: 4px 0; }
+#p-fert .botones { margin-top: 4px; gap: 6px; }
+#p-fert .tabla-fert td, #p-fert .tabla-fert th { padding-top: 2px; padding-bottom: 2px; }
+#p-fert .tabla-fert td.grado { line-height: 1.15; }
+#p-fert details.tarjeta { padding-top: 6px; padding-bottom: 6px; }
+#p-fert details summary { margin: 0; }

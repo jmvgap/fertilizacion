@@ -28,7 +28,15 @@ const Graficos = (() => {
     return res;
   }
 
-  const fmt = (v, dec = 1) => v.toLocaleString("es-AR", { maximumFractionDigits: dec });
+  // Números con coma decimal y sin separador de miles (1250,5), igual en
+  // todos los teléfonos, sin depender de la configuración regional.
+  const fmt = (v, dec = 1) => {
+    if (v === null || v === undefined || !isFinite(v)) return "—";
+    let t = Number(v).toFixed(dec);
+    if (t.includes(".")) t = t.replace(/0+$/, "").replace(/\.$/, "");
+    if (t === "-0") t = "0";
+    return t.replace(".", ",");
+  };
 
   // Prepara el lienzo y devuelve funciones de escala.
   function lienzo(svg, alto, xmin, xmax, ymax, opciones = {}) {

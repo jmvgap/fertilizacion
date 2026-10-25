@@ -252,9 +252,8 @@
     if (!ops.length) { lista.innerHTML = `<div class="aviso">No hay fertilizantes con precio que cubran lo necesario. Cargá los precios en la pantalla Fertilizantes.</div>`; return; }
     const fecha = leer(CLAVE_FECHA, "");
     lista.innerHTML = ops.map((o, i) => {
-      const filas = o.items.map((it, j) => `<li><span class="prod">${escapar(it.f.nombre)}</span>
-          <span class="cant">${fmt(it.kg, 0)} kg/ha</span><span class="costo">U$S ${fmt(it.kg * it.f.precio / 1000, 1)}</span>
-          <button class="btn sec chico" data-op="${i}" data-item="${j}">Calibrar</button></li>`).join("");
+      const filas = o.items.map((it) => `<li><span class="prod">${escapar(it.f.nombre)}</span>
+          <span class="cant">${fmt(it.kg, 0)} kg/ha</span><span class="costo">U$S ${fmt(it.kg * it.f.precio / 1000, 1)}</span></li>`).join("");
       const sobraN = o.aporteN - n, sobraP = o.aporteP - pReq;
       const sobra = [sobraN > 0.5 ? `${fmt(sobraN, 0)} kg de N` : "", sobraP > 0.5 ? `${fmt(sobraP, 0)} kg de P` : ""].filter(Boolean);
       return `<div class="tarjeta opcion${i === 0 ? " mejor" : ""}">
@@ -262,12 +261,8 @@
         <ul class="items">${filas}</ul>
         <p class="ayuda" style="margin:4px 0 0">Aporta ${fmt(o.aporteN, 0)} kg N y ${fmt(o.aporteP, 0)} kg P por ha${sobra.length ? ` (sobran ${sobra.join(" y ")})` : ""}.</p>
       </div>`;
-    }).join("") + `<p class="ayuda">Costo solo del producto, con los precios de la pantalla Fertilizantes${fecha ? ` (${fecha.split("-").reverse().join("/")})` : ""}. "Calibrar" lleva esa dosis a la calibración de la fertilizadora.</p>
+    }).join("") + `<p class="ayuda">Costo solo del producto, con los precios de la pantalla Fertilizantes${fecha ? ` (${fecha.split("-").reverse().join("/")})` : ""}.</p>
       <div class="botones"><button class="btn sec" data-informe-reco>Informe PDF</button></div>`;
-    $$("#comb-lista button[data-op]").forEach((b) => b.addEventListener("click", () => {
-      const it = ops[+b.dataset.op].items[+b.dataset.item];
-      App.calibrarPara(it.kg);
-    }));
     enlazarInforme();
   }
 

@@ -105,7 +105,7 @@
   }
 
   // ---------- Navegación ----------
-  const VERSION = "3.3.0";
+  const VERSION = "3.4.0";
   let pantallaAnterior = "ensayo";
   $("#version-app").textContent = VERSION;
   $$("[data-acerca]").forEach((b) => { b.onclick = () => { if (pantalla !== "acerca" && pantalla !== "ayuda") pantallaAnterior = pantalla; irA("acerca"); }; });
@@ -745,13 +745,6 @@
   window.App = {
     irA, toast, leer, escribir, mostrarValor, aviso, fmt, abrirInforme, informe,
     registrar(p, fn) { otrasPantallas[p] = fn; },
-    // Lleva una dosis de producto (kg/ha) a la calibración de la fertilizadora.
-    calibrarPara(kgHa) {
-      cal.objetivo = Math.round(kgHa);
-      escribir(CLAVE_CAL, cal);
-      irA("dosis");
-      toast(`Dosis a calibrar: ${fmt(cal.objetivo, 0)} kg/ha`);
-    },
   };
 
   // Arranca cuando ya se cargaron todos los módulos.
