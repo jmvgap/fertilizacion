@@ -35,18 +35,19 @@
     escribir(CLAVE_LOTE, lote);
   }
   let catalogo = leer(CLAVE_CATALOGO, null) || CATALOGO_FERTILIZANTES.map((f) => ({ ...f }));
-  // Versión 3 del catálogo (lista del 11/06/2026): se actualizan nombre, grado
-  // y densidad de los productos de fábrica conservando el precio que cada uno
-  // tenga cargado, se agregan los nuevos y se quita el cloruro de potasio. Los
-  // fertilizantes agregados por el usuario no se tocan.
-  const VERSION_CATALOGO = 3;
+  // Versión 4 del catálogo: los productos de fábrica quedan como en
+  // CATALOGO_FERTILIZANTES (se actualizan nombre, grado y densidad y se
+  // conserva el precio cargado); se quitan los que ya no están (cloruro de
+  // potasio y los agregados por error en la 3.6). Los fertilizantes que
+  // agregó el usuario (id "f...") no se tocan.
+  const VERSION_CATALOGO = 4;
   if (leer("fertilizacion.catalogoVersion", 1) < VERSION_CATALOGO) {
-    const viejo = catalogo.filter((f) => f.id !== "kcl");
+    const viejo = catalogo;
     const nuevo = CATALOGO_FERTILIZANTES.map((d) => {
       const antes = viejo.find((f) => f.id === d.id);
       return antes ? { ...d, precio: antes.precio } : { ...d };
     });
-    const propios = viejo.filter((f) => !CATALOGO_FERTILIZANTES.some((d) => d.id === f.id));
+    const propios = viejo.filter((f) => /^f[0-9a-z]+$/.test(f.id) && !CATALOGO_FERTILIZANTES.some((d) => d.id === f.id));
     catalogo = nuevo.concat(propios);
     escribir("fertilizacion.catalogoVersion", VERSION_CATALOGO);
     escribir(CLAVE_CATALOGO, catalogo);

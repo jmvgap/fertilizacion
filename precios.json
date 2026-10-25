@@ -3,22 +3,12 @@
   "nota": "Precios en U$S por tonelada. Para actualizarlos: cambiar los números y la fecha (AAAA-MM-DD). Un producto sin precio va con null.",
   "precios": {
     "urea": 850,
-    "urea_s6": 753,
-    "urea_s4": 728,
-    "urea_ng": 890,
-    "uan": 600,
-    "sa": 455,
-    "can": null,
-    "map": 1000,
-    "map_10_50": 940,
     "dap": 980,
-    "nps_zn": 1000,
-    "map_s5": 781,
-    "map_s6": 762,
+    "map": 1000,
+    "can": null,
     "spt": 800,
     "sps": null,
-    "summa_soja": 661,
-    "summa_maiz": 1005,
-    "summa_trigo": 939
+    "uan": 600,
+    "sa": 455
   }
 }

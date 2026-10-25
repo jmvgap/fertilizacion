@@ -318,3 +318,11 @@ nav.pestanas button.activa { background: var(--verde-claro); color: var(--verde-
 #p-fert .tabla-fert td.grado { line-height: 1.15; }
 #p-fert details.tarjeta { padding-top: 6px; padding-bottom: 6px; }
 #p-fert details summary { margin: 0; }
+
+/* Casillas para completar: fondo crema suave para que se noten */
+:root { --campo: #fff8e1; --campo-borde: #e6d9a8; }
+input[type=text], input[type=number], input[type=date], select {
+  background: var(--campo); border-color: var(--campo-borde);
+}
+input[type=text]:focus, input[type=number]:focus, input[type=date]:focus, select:focus { background: #fff; }
+input.invalido, input.invalido:focus { background: #fdecea; border-color: var(--error); }
