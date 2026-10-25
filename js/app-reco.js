@@ -17,13 +17,27 @@
   function loteNuevo() {
     const c = R.CULTIVOS.maiz;
     return {
-      cultivo: "maiz", rendimiento: null, nSuelo: null, umbralN: c.umbralN,
-      bray: null, criticoP: c.criticoP, rotacionTrigo: false,
+      cultivo: "maiz", rendimiento: null, unidadRend: "kg", nSuelo: null, umbralN: c.umbralN,
+      bray: null, criticoP: c.criticoP,
       arcilla: null, densidad: 1.25, zona: 1, pGrano: c.pGrano, dosisPComb: "suficiencia",
     };
   }
-  const lote = Object.assign(loteNuevo(), leer(CLAVE_LOTE, {}));
+  const guardado = leer(CLAVE_LOTE, {});
+  const lote = Object.assign(loteNuevo(), guardado);
+  // Hasta la versión 3.4 el rendimiento se cargaba en t/ha: se pasa a kg/ha.
+  if (guardado.unidadRend !== "kg") {
+    if (lote.rendimiento > 0 && lote.rendimiento <= 30) lote.rendimiento *= 1000;
+    escribir(CLAVE_LOTE, lote);
+  }
   let catalogo = leer(CLAVE_CATALOGO, null) || CATALOGO_FERTILIZANTES.map((f) => ({ ...f }));
+  // Versión 2 del catálogo: sin cloruro de potasio y con UAN.
+  if (leer("fertilizacion.catalogoVersion", 1) < 2) {
+    catalogo = catalogo.filter((f) => f.id !== "kcl");
+    if (!catalogo.some((f) => f.id === "uan")) catalogo.push({ ...CATALOGO_FERTILIZANTES.find((f) => f.id === "uan") });
+    escribir("fertilizacion.catalogoVersion", 2);
+    escribir(CLAVE_CATALOGO, catalogo);
+  }
+  const tHa = () => (lote.rendimiento > 0 ? lote.rendimiento / 1000 : 0);
   const guardarLote = () => escribir(CLAVE_LOTE, lote);
   const guardarCatalogo = () => escribir(CLAVE_CATALOGO, catalogo);
 
@@ -35,18 +49,13 @@
     const c = R.CULTIVOS[id];
     lote.cultivo = id;
     lote.umbralN = c.umbralN;
-    lote.criticoP = lote.rotacionTrigo ? R.CRITICO_ROTACION_TRIGO : c.criticoP;
+    lote.criticoP = c.criticoP;
     lote.pGrano = c.pGrano;
     guardarLote();
     dibujarLote();
   }
   $$("#cultivo-sel button").forEach((b) => b.addEventListener("click", () => aplicarCultivo(b.dataset.cultivo)));
   $$("#zona-sel button").forEach((b) => b.addEventListener("click", () => { lote.zona = +b.dataset.zona; guardarLote(); dibujarLote(); }));
-  $("#rotacion-trigo").addEventListener("change", (e) => {
-    lote.rotacionTrigo = e.target.checked;
-    lote.criticoP = lote.rotacionTrigo ? R.CRITICO_ROTACION_TRIGO : R.CULTIVOS[lote.cultivo].criticoP;
-    guardarLote(); dibujarLote();
-  });
   $$("#p-lote [data-lote]").forEach((inp) => {
     inp.addEventListener("input", () => {
       const r = Motor.leerNumero(inp.value);
@@ -60,7 +69,6 @@
   function dibujarLote() {
     $$("#cultivo-sel button").forEach((b) => b.classList.toggle("activa", b.dataset.cultivo === lote.cultivo));
     $$("#zona-sel button").forEach((b) => b.classList.toggle("activa", +b.dataset.zona === lote.zona));
-    $("#rotacion-trigo").checked = lote.rotacionTrigo;
     $("#tarjeta-n").hidden = lote.cultivo === "soja";
     $$("#p-lote [data-lote]").forEach((inp) => {
       if (document.activeElement === inp) return;
@@ -83,7 +91,7 @@
     if (lote.bray !== null && lote.arcilla !== null) {
       p = R.dosisP({
         bray: lote.bray, critico: lote.criticoP, arcilla: lote.arcilla, zona: lote.zona,
-        densidad: lote.densidad || 1.25, rendimiento: lote.rendimiento || 0, pGrano: lote.pGrano || 0,
+        densidad: lote.densidad || 1.25, rendimiento: tHa(), pGrano: lote.pGrano || 0,
       });
     }
     if (!(lote.rendimiento > 0)) faltan.push("rendimiento esperado (para la reposición)");
@@ -96,7 +104,7 @@
   function dibujarReco() {
     const { faltan, n, p } = calcular();
     const cultivo = R.CULTIVOS[lote.cultivo].nombre;
-    let html = `<p class="ayuda" style="margin-top:0">${cultivo}${lote.rendimiento > 0 ? ` · ${fmt(lote.rendimiento, 1)} t/ha esperadas` : ""} · ${lote.zona ? "zona norte" : "zona sur"}</p>`;
+    let html = `<p class="ayuda" style="margin-top:0">${cultivo}${lote.rendimiento > 0 ? ` · ${fmt(lote.rendimiento, 0)} kg/ha esperados` : ""} · ${lote.zona ? "zona norte" : "zona sur"}</p>`;
     if (faltan.length) html += `<div class="aviso">Faltan datos en la pantalla Lote: ${faltan.join(", ")}.</div>`;
 
     // Nitrógeno
@@ -120,7 +128,7 @@
             : "El P del suelo ya está en el nivel crítico o por encima: esta campaña no hace falta subirlo."}</p>
           <div class="dato"><div class="etq">Dosis de construcción y mantenimiento</div><div class="val">${kg(p.construccion, "P")}</div>${p2o5(p.construccion)}</div>
           <p class="explica">${bajo ? "Además repone" : "Repone"} el P que se lleva la cosecha${lote.rendimiento > 0
-            ? ` (${fmt(p.exportacion, 0)} kg de P con ${fmt(lote.rendimiento, 1)} t/ha)` : " (falta el rendimiento esperado)"}, para que el suelo siga en el nivel crítico la campaña siguiente.</p>
+            ? ` (${fmt(p.exportacion, 0)} kg de P con ${fmt(lote.rendimiento, 0)} kg/ha de grano)` : " (falta el rendimiento esperado)"}, para que el suelo siga en el nivel crítico la campaña siguiente.</p>
         </div>`;
       const avisos = R.avisosRubio({ bray: lote.bray, arcilla: lote.arcilla });
       if (avisos.length) html += `<div class="aviso">${avisos.join("<br>")}</div>`;
@@ -150,7 +158,7 @@
     const filas = catalogo.map((f) => {
       const c = costos[f.id] || {};
       return `<tr data-id="${f.id}">
-        <td>${escapar(f.nombre)}${editandoLista ? `<br><button class="btn peligro chico quitar">Quitar</button>` : ""}</td>
+        <td>${escapar(f.nombre)}${f.densidad > 0 ? `<br><small class="eq">${fmt(f.densidad, 2)} kg/L</small>` : ""}${editandoLista ? `<br><button class="btn peligro chico quitar">Quitar</button>` : ""}</td>
         <td class="grado">${grado(f)}</td>
         <td><input type="text" inputmode="numeric" class="precio" value="${f.precio > 0 ? f.precio : ""}" aria-label="Precio de ${escapar(f.nombre)}"></td>
         <td>${usd(c.n)}</td>
@@ -196,8 +204,8 @@
       toast("No se pudieron descargar los precios: revisá la conexión");
       return;
     }
-    const fecha = datos.fecha ? datos.fecha.split("-").reverse().join("/") : "sin fecha";
-    if (!confirm(`Se reemplazan los precios por los publicados el ${fecha}. ¿Seguir?`)) return;
+    const fecha = datos.fecha ? datos.fecha.split("-").reverse().join("/") : "";
+    if (!confirm(`Se reemplazan los precios cargados por los publicados${fecha ? ` el ${fecha}` : ""}. ¿Seguir?`)) return;
     let cambiados = 0;
     for (const [id, precio] of Object.entries(datos.precios || {})) {
       const f = catalogo.find((x) => x.id === id);
@@ -206,7 +214,7 @@
     if (datos.fecha) escribir(CLAVE_FECHA, datos.fecha);
     guardarCatalogo();
     dibujarFert();
-    toast(`Precios actualizados (${cambiados} productos, ${fecha})`);
+    toast(`Precios actualizados${fecha ? ` al ${fecha}` : ""} (${cambiados} productos)`);
   };
 
   let editandoLista = false;
@@ -221,12 +229,15 @@
     const num = (id) => { const r = Motor.leerNumero($(id).value); return r.ok ? (r.valor || 0) : NaN; };
     const n = num("#nf-n"), p = num("#nf-p"), k = num("#nf-k"), s = num("#nf-s");
     const precio = Motor.leerNumero($("#nf-precio").value);
+    const dens = Motor.leerNumero($("#nf-densidad").value);
+    if (!dens.ok) { toast("Revisá la densidad"); return; }
     if (!nombre) { toast("Falta el nombre"); return; }
     if ([n, p, k, s].some((v) => isNaN(v) || v > 100) || !precio.ok) { toast("Revisá los porcentajes y el precio"); return; }
     if (n + p + k + s <= 0) { toast("El fertilizante tiene que tener algún nutriente"); return; }
-    catalogo.push({ id: "f" + Date.now().toString(36), nombre, n, p, k, s, precio: precio.valor === null ? null : Math.round(precio.valor) });
+    catalogo.push({ id: "f" + Date.now().toString(36), nombre, n, p, k, s, precio: precio.valor === null ? null : Math.round(precio.valor),
+      ...(dens.valor > 0 ? { densidad: dens.valor } : {}) });
     guardarCatalogo();
-    ["#nf-nombre", "#nf-n", "#nf-p", "#nf-k", "#nf-s", "#nf-precio"].forEach((id) => { $(id).value = ""; });
+    ["#nf-nombre", "#nf-n", "#nf-p", "#nf-k", "#nf-s", "#nf-precio", "#nf-densidad"].forEach((id) => { $(id).value = ""; });
     $("#agregar-fert").open = false;
     toast(`"${nombre}" agregado`);
     dibujarFert();
@@ -257,7 +268,7 @@
     const fecha = leer(CLAVE_FECHA, "");
     lista.innerHTML = ops.map((o, i) => {
       const filas = o.items.map((it) => `<li><span class="prod">${escapar(it.f.nombre)}</span>
-          <span class="cant">${fmt(it.kg, 0)} kg/ha</span><span class="costo">U$S ${fmt(it.kg * it.f.precio / 1000, 1)}</span></li>`).join("");
+          <span class="cant">${fmt(it.kg, 0)} kg/ha${it.f.densidad > 0 ? ` (${fmt(it.kg / it.f.densidad, 0)} L/ha)` : ""}</span><span class="costo">U$S ${fmt(it.kg * it.f.precio / 1000, 1)}</span></li>`).join("");
       const sobraN = o.aporteN - n, sobraP = o.aporteP - pReq;
       const sobra = [sobraN > 0.5 ? `${fmt(sobraN, 0)} kg de N` : "", sobraP > 0.5 ? `${fmt(sobraP, 0)} kg de P` : ""].filter(Boolean);
       return `<div class="tarjeta opcion${i === 0 ? " mejor" : ""}">
@@ -283,14 +294,14 @@
     const c = R.CULTIVOS[lote.cultivo];
     const num = (v, dec, u) => (v === null || v === undefined ? null : `${fmt(v, dec)} ${u}`);
     let h = inf.encabezado("Informe de recomendación de fertilización",
-      `${c.nombre}${lote.rendimiento > 0 ? ` · ${fmt(lote.rendimiento, 1)} t/ha esperadas` : ""}`);
+      `${c.nombre}${lote.rendimiento > 0 ? ` · ${fmt(lote.rendimiento, 0)} kg/ha esperados` : ""}`);
     h += `<section class="bloque"><h2>Datos del lote</h2>${inf.datos([
       ["Cultivo", c.nombre],
-      ["Rendimiento esperado", num(lote.rendimiento, 1, "t/ha")],
+      ["Rendimiento esperado", num(lote.rendimiento, 0, "kg/ha")],
       lote.cultivo !== "soja" ? ["N de nitratos 0–60 cm a la siembra", num(lote.nSuelo, 0, "kg N/ha")] : null,
       lote.cultivo !== "soja" ? ["Umbral de N (suelo + fertilizante)", num(lote.umbralN, 0, "kg N/ha")] : null,
       ["P Bray 1 (0–20 cm)", num(lote.bray, 1, "ppm")],
-      ["Nivel crítico de P", `${fmt(lote.criticoP, 1)} ppm${lote.rotacionTrigo ? " (rotación con trigo)" : ""}`],
+      ["Nivel crítico de P", `${fmt(lote.criticoP, 1)} ppm`],
       ["Arcilla (0–20 cm)", num(lote.arcilla, 1, "%")],
       ["Densidad aparente", num(lote.densidad, 2, "g/cm³")],
       ["Zona", lote.zona ? "Norte (al norte de la Pampa Deprimida)" : "Sur (Pampa Austral)"],
@@ -321,7 +332,7 @@
         h += `<h3>${nombre} (${fmt(n || 0, 0)} kg N y ${fmt(pReq, 0)} kg P por ha)</h3>`;
         if (!ops.length) { h += `<p class="nota">No hace falta fertilizar o no hay precios cargados.</p>`; continue; }
         h += `<table class="inf-tabla"><tr><th></th><th>Productos (kg/ha)</th><th>U$S/ha</th></tr>${ops.map((o, i) =>
-          `<tr><td>${i === 0 ? "<b>Más económica</b>" : `Alternativa ${i}`}</td><td>${o.items.map((it) => `${App.informe.esc(it.f.nombre)}: ${fmt(it.kg, 0)}`).join("<br>")}</td>
+          `<tr><td>${i === 0 ? "<b>Más económica</b>" : `Alternativa ${i}`}</td><td>${o.items.map((it) => `${App.informe.esc(it.f.nombre)}: ${fmt(it.kg, 0)}${it.f.densidad > 0 ? ` (${fmt(it.kg / it.f.densidad, 0)} L)` : ""}`).join("<br>")}</td>
            <td>${i === 0 ? "<b>" : ""}${fmt(o.costo, 1)}${i === 0 ? "</b>" : ""}</td></tr>`).join("")}</table>`;
       }
       h += `<p class="nota">Costo solo del producto${fecha ? `, con precios del ${fecha.split("-").reverse().join("/")}` : ""}.</p></section>`;

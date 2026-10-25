@@ -18,7 +18,6 @@ const Recomendacion = (() => {
     soja: { nombre: "Soja", umbralN: 0, criticoP: 14.3, pGrano: 6.7 },
     trigo: { nombre: "Trigo", umbralN: 120, criticoP: 19, pGrano: 3.75 },
   };
-  const CRITICO_ROTACION_TRIGO = 19;
 
   // ---------- Nitrógeno: método del umbral ----------
   function dosisN(umbral, nSuelo) {
@@ -138,7 +137,7 @@ const Recomendacion = (() => {
   }
 
   return {
-    P_A_P2O5, K_A_K2O, CULTIVOS, CRITICO_ROTACION_TRIGO,
+    P_A_P2O5, K_A_K2O, CULTIVOS,
     dosisN, coeficienteB, kgPPorPpm, dosisP, avisosRubio,
     costosPorNutriente, combinaciones, gradoEquivalente,
   };

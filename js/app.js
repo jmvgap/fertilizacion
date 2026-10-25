@@ -108,7 +108,7 @@
   }
 
   // ---------- Navegación ----------
-  const VERSION = "3.4.0";
+  const VERSION = "3.5.0";
   let pantallaAnterior = "ensayo";
   $("#version-app").textContent = VERSION;
   $$("[data-acerca]").forEach((b) => { b.onclick = () => { if (pantalla !== "acerca" && pantalla !== "ayuda") pantallaAnterior = pantalla; irA("acerca"); }; });

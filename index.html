@@ -84,7 +84,7 @@
           <button data-cultivo="soja">Soja</button>
           <button data-cultivo="trigo">Trigo</button>
         </div>
-        <label class="campo"><span>Rendimiento (t/ha)</span><input type="text" inputmode="decimal" data-lote="rendimiento"></label>
+        <label class="campo"><span>Rendimiento (kg/ha)</span><input type="text" inputmode="numeric" data-lote="rendimiento"></label>
       </div>
     </div>
     <div class="tarjeta" id="tarjeta-n">
@@ -100,7 +100,6 @@
         <label class="campo"><span>P Bray 1, 0–20 cm (ppm)</span><input type="text" inputmode="decimal" data-lote="bray"></label>
         <label class="campo"><span>Nivel crítico (ppm)</span><input type="text" inputmode="decimal" data-lote="criticoP"></label>
       </div>
-      <label class="check"><input type="checkbox" id="rotacion-trigo"> Rotación con trigo (crítico de 19 ppm para todos)</label>
       <div class="fila">
         <label class="campo"><span>Arcilla (%)</span><input type="text" inputmode="decimal" data-lote="arcilla"></label>
         <label class="campo"><span>Dens. aparente (g/cm³)</span><input type="text" inputmode="decimal" data-lote="densidad"></label>
@@ -143,7 +142,10 @@
         <label class="campo"><span>S %</span><input type="text" inputmode="decimal" id="nf-s"></label>
       </div>
       <p class="ayuda">Porcentajes de elemento (P, no P₂O₅). Si tenés el grado en óxidos: P = P₂O₅ ÷ 2,29 y K = K₂O ÷ 1,2.</p>
-      <label class="campo" style="max-width:220px"><span>Precio (U$S/t)</span><input type="text" inputmode="numeric" id="nf-precio"></label>
+      <div class="fila">
+        <label class="campo"><span>Precio (U$S/t)</span><input type="text" inputmode="numeric" id="nf-precio"></label>
+        <label class="campo"><span>Densidad (kg/L, solo líquidos)</span><input type="text" inputmode="decimal" id="nf-densidad"></label>
+      </div>
       <div class="botones"><button class="btn" id="nf-agregar">Agregar</button></div>
     </details>
   </section>
