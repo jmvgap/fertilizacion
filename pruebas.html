@@ -204,7 +204,17 @@ prueba("P: si el Bray ya supera el crítico, suficiencia 0 y queda solo la repos
   return (d.suficiencia === 0 && cerca(d.construccion, 30)) || JSON.stringify(d);
 });
 
-const catPrueba = CATALOGO_FERTILIZANTES.map((f) => ({ ...f }));
+// Catálogo fijo de prueba (precios viejos de Ferti), independiente del que
+// trae la app, para que las cuentas a mano no cambien.
+const catPrueba = [
+  { id: "urea", nombre: "Urea", n: 46, p: 0, k: 0, s: 0, precio: 522 },
+  { id: "dap", nombre: "DAP", n: 18, p: 20, k: 0, s: 0, precio: 880 },
+  { id: "map", nombre: "MAP", n: 11, p: 23, k: 0, s: 0, precio: 883 },
+  { id: "can", nombre: "CAN", n: 27, p: 0, k: 0, s: 0, precio: 450 },
+  { id: "spt", nombre: "SPT", n: 0, p: 20, k: 0, s: 0, precio: 800 },
+  { id: "sps", nombre: "SPS", n: 0, p: 9, k: 0, s: 12, precio: 397 },
+  { id: "sa", nombre: "SA", n: 21, p: 0, k: 0, s: 24, precio: null },
+];
 prueba("costos: urea 522 U$S/t → 1,135 U$S/kg N; SPT 800 → 4,00 U$S/kg P", () => {
   const c = R.costosPorNutriente(catPrueba).porFertilizante;
   return (cerca(c.urea.n, 522 / 460, 1e-9) && cerca(c.spt.p, 4) && cerca(c.spt.p2o5, 4 / R.P_A_P2O5)) || JSON.stringify(c.urea);

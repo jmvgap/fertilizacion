@@ -12,32 +12,46 @@
   const CLAVE_LOTE = "fertilizacion.lote";
   const CLAVE_CATALOGO = "fertilizacion.catalogo";
   const CLAVE_FECHA = "fertilizacion.fechaPrecios";
+  // Ningún cultivo rinde 100 t/ha o más: un valor así casi seguro está en kg/ha.
+  const RENDIMIENTO_MAXIMO = 100;
+  const AVISO_REND = "El rendimiento va en t/ha: por ejemplo, 10 para 10.000 kg/ha.";
 
   // ---------- Estado ----------
   function loteNuevo() {
     const c = R.CULTIVOS.maiz;
     return {
-      cultivo: "maiz", rendimiento: null, unidadRend: "kg", nSuelo: null, umbralN: c.umbralN,
+      cultivo: "maiz", rendimiento: null, unidadRend: "t", nSuelo: null, umbralN: c.umbralN,
       bray: null, criticoP: c.criticoP,
       arcilla: null, densidad: 1.25, zona: 1, pGrano: c.pGrano, dosisPComb: "suficiencia",
     };
   }
   const guardado = leer(CLAVE_LOTE, {});
   const lote = Object.assign(loteNuevo(), guardado);
-  // Hasta la versión 3.4 el rendimiento se cargaba en t/ha: se pasa a kg/ha.
-  if (guardado.unidadRend !== "kg") {
-    if (lote.rendimiento > 0 && lote.rendimiento <= 30) lote.rendimiento *= 1000;
+  // El rendimiento va en t/ha. La versión 3.5 lo guardaba en kg/ha: se
+  // convierte; y un valor de 100 o más guardado antes también eran kg/ha.
+  if (guardado.unidadRend !== "t") {
+    if (guardado.unidadRend === "kg" || lote.rendimiento >= RENDIMIENTO_MAXIMO) lote.rendimiento = lote.rendimiento / 1000;
+    lote.unidadRend = "t";
     escribir(CLAVE_LOTE, lote);
   }
   let catalogo = leer(CLAVE_CATALOGO, null) || CATALOGO_FERTILIZANTES.map((f) => ({ ...f }));
-  // Versión 2 del catálogo: sin cloruro de potasio y con UAN.
-  if (leer("fertilizacion.catalogoVersion", 1) < 2) {
-    catalogo = catalogo.filter((f) => f.id !== "kcl");
-    if (!catalogo.some((f) => f.id === "uan")) catalogo.push({ ...CATALOGO_FERTILIZANTES.find((f) => f.id === "uan") });
-    escribir("fertilizacion.catalogoVersion", 2);
+  // Versión 3 del catálogo (lista del 11/06/2026): se actualizan nombre, grado
+  // y densidad de los productos de fábrica conservando el precio que cada uno
+  // tenga cargado, se agregan los nuevos y se quita el cloruro de potasio. Los
+  // fertilizantes agregados por el usuario no se tocan.
+  const VERSION_CATALOGO = 3;
+  if (leer("fertilizacion.catalogoVersion", 1) < VERSION_CATALOGO) {
+    const viejo = catalogo.filter((f) => f.id !== "kcl");
+    const nuevo = CATALOGO_FERTILIZANTES.map((d) => {
+      const antes = viejo.find((f) => f.id === d.id);
+      return antes ? { ...d, precio: antes.precio } : { ...d };
+    });
+    const propios = viejo.filter((f) => !CATALOGO_FERTILIZANTES.some((d) => d.id === f.id));
+    catalogo = nuevo.concat(propios);
+    escribir("fertilizacion.catalogoVersion", VERSION_CATALOGO);
     escribir(CLAVE_CATALOGO, catalogo);
   }
-  const tHa = () => (lote.rendimiento > 0 ? lote.rendimiento / 1000 : 0);
+  const tHa = () => (lote.rendimiento > 0 && lote.rendimiento < RENDIMIENTO_MAXIMO ? lote.rendimiento : 0);
   const guardarLote = () => escribir(CLAVE_LOTE, lote);
   const guardarCatalogo = () => escribir(CLAVE_CATALOGO, catalogo);
 
@@ -59,8 +73,10 @@
   $$("#p-lote [data-lote]").forEach((inp) => {
     inp.addEventListener("input", () => {
       const r = Motor.leerNumero(inp.value);
-      inp.classList.toggle("invalido", !r.ok);
-      if (!r.ok) return;
+      const rendAlto = inp.dataset.lote === "rendimiento" && r.ok && r.valor >= RENDIMIENTO_MAXIMO;
+      inp.classList.toggle("invalido", !r.ok || rendAlto);
+      if (inp.dataset.lote === "rendimiento") aviso("#aviso-rend", rendAlto ? AVISO_REND : "", "error");
+      if (!r.ok || rendAlto) return;
       lote[inp.dataset.lote] = r.valor;
       guardarLote();
     });
@@ -70,6 +86,7 @@
     $$("#cultivo-sel button").forEach((b) => b.classList.toggle("activa", b.dataset.cultivo === lote.cultivo));
     $$("#zona-sel button").forEach((b) => b.classList.toggle("activa", +b.dataset.zona === lote.zona));
     $("#tarjeta-n").hidden = lote.cultivo === "soja";
+    aviso("#aviso-rend", lote.rendimiento >= RENDIMIENTO_MAXIMO ? AVISO_REND : "", "error");
     $$("#p-lote [data-lote]").forEach((inp) => {
       if (document.activeElement === inp) return;
       inp.value = mostrarValor(lote[inp.dataset.lote]);
@@ -94,7 +111,7 @@
         densidad: lote.densidad || 1.25, rendimiento: tHa(), pGrano: lote.pGrano || 0,
       });
     }
-    if (!(lote.rendimiento > 0)) faltan.push("rendimiento esperado (para la reposición)");
+    if (!(tHa() > 0)) faltan.push("rendimiento esperado en t/ha (para la reposición)");
     return { faltan, n, p };
   }
 
@@ -104,7 +121,7 @@
   function dibujarReco() {
     const { faltan, n, p } = calcular();
     const cultivo = R.CULTIVOS[lote.cultivo].nombre;
-    let html = `<p class="ayuda" style="margin-top:0">${cultivo}${lote.rendimiento > 0 ? ` · ${fmt(lote.rendimiento, 0)} kg/ha esperados` : ""} · ${lote.zona ? "zona norte" : "zona sur"}</p>`;
+    let html = `<p class="ayuda" style="margin-top:0">${cultivo}${tHa() > 0 ? ` · ${fmt(tHa(), 1)} t/ha esperadas` : ""} · ${lote.zona ? "zona norte" : "zona sur"}</p>`;
     if (faltan.length) html += `<div class="aviso">Faltan datos en la pantalla Lote: ${faltan.join(", ")}.</div>`;
 
     // Nitrógeno
@@ -127,8 +144,8 @@
             ? "Lleva el P del suelo al nivel crítico para el cultivo de esta campaña."
             : "El P del suelo ya está en el nivel crítico o por encima: esta campaña no hace falta subirlo."}</p>
           <div class="dato"><div class="etq">Dosis de construcción y mantenimiento</div><div class="val">${kg(p.construccion, "P")}</div>${p2o5(p.construccion)}</div>
-          <p class="explica">${bajo ? "Además repone" : "Repone"} el P que se lleva la cosecha${lote.rendimiento > 0
-            ? ` (${fmt(p.exportacion, 0)} kg de P con ${fmt(lote.rendimiento, 0)} kg/ha de grano)` : " (falta el rendimiento esperado)"}, para que el suelo siga en el nivel crítico la campaña siguiente.</p>
+          <p class="explica">${bajo ? "Además repone" : "Repone"} el P que se lleva la cosecha${tHa() > 0
+            ? ` (${fmt(p.exportacion, 0)} kg de P con ${fmt(tHa(), 1)} t/ha de grano)` : " (falta el rendimiento esperado)"}, para que el suelo siga en el nivel crítico la campaña siguiente.</p>
         </div>`;
       const avisos = R.avisosRubio({ bray: lote.bray, arcilla: lote.arcilla });
       if (avisos.length) html += `<div class="aviso">${avisos.join("<br>")}</div>`;
@@ -294,10 +311,10 @@
     const c = R.CULTIVOS[lote.cultivo];
     const num = (v, dec, u) => (v === null || v === undefined ? null : `${fmt(v, dec)} ${u}`);
     let h = inf.encabezado("Informe de recomendación de fertilización",
-      `${c.nombre}${lote.rendimiento > 0 ? ` · ${fmt(lote.rendimiento, 0)} kg/ha esperados` : ""}`);
+      `${c.nombre}${tHa() > 0 ? ` · ${fmt(tHa(), 1)} t/ha esperadas` : ""}`);
     h += `<section class="bloque"><h2>Datos del lote</h2>${inf.datos([
       ["Cultivo", c.nombre],
-      ["Rendimiento esperado", num(lote.rendimiento, 0, "kg/ha")],
+      ["Rendimiento esperado", tHa() > 0 ? `${fmt(tHa(), 1)} t/ha` : null],
       lote.cultivo !== "soja" ? ["N de nitratos 0–60 cm a la siembra", num(lote.nSuelo, 0, "kg N/ha")] : null,
       lote.cultivo !== "soja" ? ["Umbral de N (suelo + fertilizante)", num(lote.umbralN, 0, "kg N/ha")] : null,
       ["P Bray 1 (0–20 cm)", num(lote.bray, 1, "ppm")],
